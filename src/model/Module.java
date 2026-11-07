@@ -2,11 +2,11 @@ package model;
 
 public class Module {
 
-    private String code;
-    private String title;
-    private int credits;
-    private int semester;
-    private String lecturerId;
+    private final String code;
+    private final String title;
+    private final int credits;
+    private final int semester;
+    private final String lecturerId;
 
     public Module(String code, String title, int credits, int semester, String lecturerId) {
 
@@ -49,11 +49,6 @@ public class Module {
     public String toString() {
         return code + " - " + title + " (" + credits + " credits, Sem " + semester + ")";                                
                 
-    }
-    
-    public static void main(String[] args) {
-        Module oop = new Module("CS4031", "OOP", 6, 1, "ME001");
-        System.out.println(oop);
     }
 }
 
