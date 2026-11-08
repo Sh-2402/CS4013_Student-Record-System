@@ -1,0 +1,27 @@
+code,title,credits,semester,lecturerId
+CS4221,Foundations of Computer Science 1,6,1,LEC001
+ET4011,Fundamentals of Computer Organisation,6,1,LEC002
+MA4111,Discrete Mathematics,6,1,LEC003
+CS4182,Foundations of Computer Science 2,6,2,LEC001
+ET4162,Computing System Organisation,6,2,LEC002
+MA4402,Computer Maths 2,6,2,LEC003
+CS4013,Object Oriented Development,6,1,LEC004
+CS4023,Operating Systems,6,1,LEC005
+CS4416,Database Systems,6,1,LEC006
+CS4006,Intelligent Systems,6,2,LEC007
+CS4076,Event Driven Programming,6,2,LEC004
+CS4115,Data Structures and Algorithms,6,2,LEC005
+CS4617,Computer Systems Project 1,6,1,LEC008
+CS4618,Computer Systems Project 2 (Double Weighted),12,2,LEC008
+EE4101,Circuit Theory,6,1,LEC009
+EE4103,Engineering Physics,6,1,LEC010
+EE4102,Digital Electronics,6,2,LEC009
+EE4104,Signals and Systems,6,2,LEC010
+BS4101,Principles of Accounting,6,1,LEC011
+BS4102,Introduction to Marketing,6,1,LEC012
+BS4103,Microeconomics,6,2,LEC011
+BS4104,Organisational Behaviour,6,2,LEC012
+CS6101,Software Architecture,6,1,LEC004
+CS6102,Software Testing and Quality,6,1,LEC013
+CS6103,Data Analytics,6,2,LEC013
+CS6104,MSc Project,12,2,LEC008
