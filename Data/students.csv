@@ -1,5 +1,5 @@
-ID,name,programme
-101,John,Computer Science
-102,Mary,Cybersecurity
-103,David,Software Engineering
-786,Adam,Biology
+id,name,email
+101,John,john@example.com
+102,Mary,mary@example.com
+103,David,david@example.com
+786,Adam,adam@example.com

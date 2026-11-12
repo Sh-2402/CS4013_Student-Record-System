@@ -4,14 +4,16 @@ import java.util.ArrayList;
 
 public class Faculty extends Person{
 
-   private ArrayList<String>modules;
-   
-    public Faculty(String name,String ID){
-        super(name, ID);
+   private ArrayList<Module>modules;
+   private String department;
+
+    public Faculty(String name,String id,String email,String department){
+        super(name, id,email);
       modules = new ArrayList<>();
+      this.department = department;
     }
 
-    public void addModule(String module){
+    public void addModule(Module module){
         if(modules.contains(module)){
             System.out.println("Already an existing module");
         }else{
@@ -19,9 +21,13 @@ public class Faculty extends Person{
         }
     }
 
-    public ArrayList<String> getModules(){
-        ArrayList<String> moduleCopy = new ArrayList<>(modules);
+    public ArrayList<Module> getModulesTaught(){
+        ArrayList<Module> moduleCopy = new ArrayList<>(modules);
         return moduleCopy;
     }
-    
+    @Override
+    public String getRole(){
+        return "FACULTY";
+    }
+
 }
