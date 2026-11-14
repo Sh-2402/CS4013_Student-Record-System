@@ -2,19 +2,27 @@ package main.model;
 
 public abstract class Person{
     private String name;
-    private String ID;
+    private String id;
+    private String email;
 
-    protected Person(String name,String ID){
+    protected Person(String name,String id,String email){
         this.name = name;
-        this.ID = ID;
+        this.id = id;
+        this.email = email;
     }
 
     public String getName(){
         return name;
     }
-    
-    public String getID(){
-        return ID;
+
+    public String getId(){
+        return id;
     }
+
+    public String getEmail(){
+        return email;
+    }
+
+    public abstract String getRole();
 
 }
