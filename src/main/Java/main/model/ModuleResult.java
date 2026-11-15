@@ -64,11 +64,6 @@ public class ModuleResult {
                     "Semester must be either 1 or 2");
         }
 
-        if (module.getCredits() <= 0) {
-            throw new IllegalArgumentException(
-                    "Module credits must be positive");
-        }
-
         this.year = year;
         this.semester = semester;
     }
@@ -86,6 +81,7 @@ public class ModuleResult {
     /**
      * Returns the starting year of the academic year.
      * Example: 2026 represents academic year 2026/27.
+     * This is not the year of study.
      */
     public int getYear() {
         return year;
@@ -126,6 +122,7 @@ public class ModuleResult {
      * Compatibility method for existing project classes.
      *
      * This returns the QCS, not the individual grade QPV.
+     * Prefer {@link #getQualityCreditScore()} in new code.
      *
      * @return the quality credit score
      */

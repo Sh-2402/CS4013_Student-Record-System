@@ -1,4 +1,3 @@
-
 package main.model;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -33,8 +32,17 @@ class ModuleResultTest {
     }
 
     @Test
+    void getQpvMatchesQualityCreditScore() {
+        for (Grade grade : Grade.values()) {
+            ModuleResult r = result(grade);
+            assertEquals(r.getQualityCreditScore(), r.getQpv(), DELTA,
+                    grade + " QPV and QCS should match");
+        }
+    }
+
+    @Test
     void a1GivesFourTimesModuleCredits() {
-        assertEquals(24.0, result(Grade.A1).getQpv(), DELTA);
+        assertEquals(24.0, result(Grade.A1).getQualityCreditScore(), DELTA);
     }
 
     @Test
@@ -71,6 +79,7 @@ class ModuleResultTest {
         assertEquals(6, r.getQcaCredits());
 
         assertTrue(r.isDeficient());
+        assertTrue(r.isFail());
         assertFalse(r.isPass());
     }
 
@@ -83,6 +92,7 @@ class ModuleResultTest {
         assertEquals(6, r.getQcaCredits());
 
         assertTrue(r.isDeficient());
+        assertTrue(r.isFail());
     }
 
     // ---------- Pass / Fail modules ----------
@@ -97,6 +107,7 @@ class ModuleResultTest {
 
         assertTrue(r.isPass());
         assertFalse(r.isDeficient());
+        assertFalse(r.isFail());
     }
 
     @Test
@@ -109,6 +120,7 @@ class ModuleResultTest {
 
         assertFalse(r.isPass());
         assertTrue(r.isDeficient());
+        assertTrue(r.isFail());
     }
 
     // ---------- Exemption ----------
@@ -122,8 +134,28 @@ class ModuleResultTest {
         assertEquals(0.0, r.getQpv(), DELTA);
 
         // EX is separate from an ordinary pass.
+        assertTrue(r.isExempt());
         assertFalse(r.isPass());
-        assertTrue(r.getGrade().isPassOrExempt());
+        assertTrue(r.isPassOrExempt());
+    }
+
+    @Test
+    void onlyExIsExempt() {
+        for (Grade grade : Grade.values()) {
+            assertEquals(grade == Grade.EX, result(grade).isExempt(),
+                    grade + " exempt status is incorrect");
+        }
+    }
+
+    // ---------- Pass classification ----------
+
+    @Test
+    void passOrExemptMatchesGrade() {
+        for (Grade grade : Grade.values()) {
+            assertEquals(grade.isPassOrExempt(),
+                    result(grade).isPassOrExempt(),
+                    grade + " pass-or-exempt status is incorrect");
+        }
     }
 
     // ---------- Administrative grades ----------
@@ -138,6 +170,7 @@ class ModuleResultTest {
 
         assertTrue(r.isDeficient());
         assertFalse(r.isPass());
+        assertTrue(r.isAdministrative());
     }
 
     @Test
@@ -150,6 +183,8 @@ class ModuleResultTest {
 
         for (Grade grade : administrativeGrades) {
             ModuleResult r = result(grade);
+
+            assertTrue(r.isAdministrative(), grade + " should be administrative");
 
             assertEquals(0, r.getQcaCredits(),
                     grade + " should be excluded from QCA");
@@ -172,23 +207,29 @@ class ModuleResultTest {
         }
     }
 
+    @Test
+    void qualityGradesAreNotAdministrative() {
+        assertFalse(result(Grade.A1).isAdministrative());
+        assertFalse(result(Grade.F).isAdministrative());
+        assertFalse(result(Grade.P).isAdministrative());
+    }
+
     // ---------- Validation ----------
 
     @Test
-void nullArgumentsAreRejected() {
+    void nullArgumentsAreRejected() {
+        assertThrows(NullPointerException.class,
+                () -> new ModuleResult(
+                        null, module(6), 2026, 1, Grade.A1));
 
-    assertThrows(NullPointerException.class,
-            () -> new ModuleResult(
-                    null, module(6), 2026, 1, Grade.A1));
+        assertThrows(NullPointerException.class,
+                () -> new ModuleResult(
+                        student(), null, 2026, 1, Grade.A1));
 
-    assertThrows(NullPointerException.class,
-            () -> new ModuleResult(
-                    student(), null, 2026, 1, Grade.A1));
-
-    assertThrows(NullPointerException.class,
-            () -> new ModuleResult(
-                    student(), module(6), 2026, 1, null));
-}
+        assertThrows(NullPointerException.class,
+                () -> new ModuleResult(
+                        student(), module(6), 2026, 1, null));
+    }
 
     @Test
     void invalidSemesterIsRejected() {

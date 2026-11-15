@@ -1,4 +1,3 @@
-
 package main.model;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -240,7 +239,7 @@ class GradeTest {
     // ---------- Percentage Thresholds ----------
 
     @Test
-    void percentageThresholdsMatchExpectedValues() {
+    void percentageThresholdsMatchHandbook() {
         assertEquals(40.0, Grade.MIN_C3_PERCENT, DELTA);
         assertEquals(35.0, Grade.MIN_D1_PERCENT, DELTA);
     }
@@ -269,5 +268,70 @@ class GradeTest {
                     grade + " has an invalid QCA point value"
             );
         }
+    }
+
+    // ---------- Annual repeat cap (SP 3.2.6.1) ----------
+
+    @Test
+    void capAtC3LowersGradesBetterThanC3() {
+        assertEquals(Grade.C3, Grade.A1.capAtC3());
+        assertEquals(Grade.C3, Grade.A2.capAtC3());
+        assertEquals(Grade.C3, Grade.B1.capAtC3());
+        assertEquals(Grade.C3, Grade.B2.capAtC3());
+        assertEquals(Grade.C3, Grade.B3.capAtC3());
+        assertEquals(Grade.C3, Grade.C1.capAtC3());
+        assertEquals(Grade.C3, Grade.C2.capAtC3());
+    }
+
+    @Test
+    void capAtC3LeavesOtherGradesUnchanged() {
+        assertEquals(Grade.C3, Grade.C3.capAtC3());
+        assertEquals(Grade.D1, Grade.D1.capAtC3());
+        assertEquals(Grade.F, Grade.F.capAtC3());
+        assertEquals(Grade.NG, Grade.NG.capAtC3());
+        assertEquals(Grade.P, Grade.P.capAtC3());
+        assertEquals(Grade.N, Grade.N.capAtC3());
+        assertEquals(Grade.EX, Grade.EX.capAtC3());
+        assertEquals(Grade.I, Grade.I.capAtC3());
+    }
+
+    // ---------- Higher of original and repeat (SP 3.2.6) ----------
+
+    @Test
+    void higherOfReturnsRepeatWhenBetter() {
+        assertEquals(Grade.C3, Grade.higherOf(Grade.F, Grade.C3));
+        assertEquals(Grade.C3, Grade.higherOf(Grade.D1, Grade.C3));
+    }
+
+    @Test
+    void higherOfKeepsOriginalWhenBetter() {
+        assertEquals(Grade.B1, Grade.higherOf(Grade.B1, Grade.C3));
+        assertEquals(Grade.D1, Grade.higherOf(Grade.D1, Grade.F));
+    }
+
+    @Test
+    void higherOfReturnsFirstWhenEqual() {
+        assertEquals(Grade.C3, Grade.higherOf(Grade.C3, Grade.C3));
+        assertEquals(Grade.F, Grade.higherOf(Grade.F, Grade.NG));
+    }
+
+    @Test
+    void incompleteDuringRepeatKeepsOriginalGrade() {
+        // SP 3.2.3.14
+        assertEquals(Grade.F, Grade.higherOf(Grade.F, Grade.I));
+        assertEquals(Grade.D1, Grade.higherOf(Grade.D1, Grade.I));
+    }
+
+    @Test
+    void realGradeReplacesIncomplete() {
+        assertEquals(Grade.C3, Grade.higherOf(Grade.I, Grade.C3));
+    }
+
+    @Test
+    void higherOfRejectsNulls() {
+        assertThrows(NullPointerException.class,
+                () -> Grade.higherOf(null, Grade.A1));
+        assertThrows(NullPointerException.class,
+                () -> Grade.higherOf(Grade.A1, null));
     }
 }

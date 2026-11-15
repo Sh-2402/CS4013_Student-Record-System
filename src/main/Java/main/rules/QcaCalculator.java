@@ -2,8 +2,10 @@ package main.rules;
 
 import main.model.ModuleResult;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * Calculates semester, cumulative and weighted Quality Credit Averages.
@@ -22,13 +24,17 @@ import java.util.Objects;
  * SP 3.2.6:
  * For repeated modules, the higher of the original and repeat grade stands.
  * Annual repeat grades are capped at C3.
+ * (See Grade.higherOf and Grade.capAtC3.)
  *
  * MS 2.6.3:
  * A three-year Part 2 programme uses year weightings of 1:2:2.
  *
+ * The handbook gives no rounding rule, so QCA values are not rounded.
+ * 
  * IMPORTANT:
  * The results supplied to this calculator should contain the final grade
- * that stands for each module after repeat rules have been applied.
+ * that stands for each module after repeat rules have been applied, and 
+ * should belong to one student.
  */
 public class QcaCalculator {
 
@@ -87,6 +93,61 @@ public class QcaCalculator {
         return calculateAverage(totalQcs, totalQualityHours);
     }
 
+    // ---------- Year QCA ----------
+
+    /**
+     * Calculates QCA for one academic year (both semesters).
+     *
+     * @param results all relevant results for the student
+     * @param year academic year start, e.g. 2026
+     * @return year QCA, or 0.0 if there are no quality hours
+     */
+    public double yearQca(List<ModuleResult> results, int year) {
+
+        Objects.requireNonNull(results, "Results must not be null");
+
+        List<ModuleResult> inYear = new ArrayList<>();
+
+        for (ModuleResult result : results) {
+            Objects.requireNonNull(result, "Result must not be null");
+
+            if (result.getYear() == year) {
+                inYear.add(result);
+            }
+        }
+
+        return calculateQca(inYear);
+    }
+
+     // ---------- Programme QCA ----------
+
+    /**
+     * Calculates QCA for the modules that belong to one programme.
+     *
+     * @param results all relevant results for the student
+     * @param programmeModuleCodes codes of the modules in the programme
+     * @return programme QCA, or 0.0 if there are no quality hours
+     */
+    public double programmeQca(
+            List<ModuleResult> results, Set<String> programmeModuleCodes) {
+
+        Objects.requireNonNull(results, "Results must not be null");
+        Objects.requireNonNull(
+                programmeModuleCodes, "Programme module codes must not be null");
+
+        List<ModuleResult> inProgramme = new ArrayList<>();
+
+        for (ModuleResult result : results) {
+            Objects.requireNonNull(result, "Result must not be null");
+
+            if (programmeModuleCodes.contains(result.getModule().getCode())) {
+                inProgramme.add(result);
+            }
+        }
+
+        return calculateQca(inProgramme);
+    }
+
     // ---------- Overall QCA ----------
 
     /**
@@ -108,6 +169,7 @@ public class QcaCalculator {
      *
      * For three years of Part 2, the weighting is 1:2:2.
      * For one or two years, no additional weighting is applied.
+     * Each year's QCS and quality hours are multiplied by that year's factor.
      *
      * Each inner list represents one year of Part 2.
      *

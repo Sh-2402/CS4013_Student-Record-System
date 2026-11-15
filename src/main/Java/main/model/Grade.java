@@ -1,6 +1,8 @@
 
 package main.model;
 
+import java.util.Objects;
+
 /**
  * Module grades from the UL Handbook of Academic Regulations
  * and Procedures 2026/27.
@@ -50,9 +52,10 @@ public enum Grade {
 
     /*
      * NOTE:
-     * The handbook document-control history mentions s and S2.
-     * Their meanings and behaviour need confirmation from the lecturer
-     * before adding them to this enum.
+      * Table 4.1 (SP 3.2.2.5) lists an "S" grade among those not awarded for
+     * normal participation, and the document-control history mentions S2.
+     * The handbook does not define them, so their meaning and behaviour need
+     * confirmation from the lecturer before they are added to this enum.
      */
 
     /** Minimum mark (%) for C3. */
@@ -145,6 +148,44 @@ public enum Grade {
     /** Returns true for pass/fail module grades P or N. */
     public boolean isPassFailGrade() {
         return this == P || this == N;
+    }
+    // ---------- Repeat rules (SP 3.2.6) ----------
+
+    /**
+     * Applies the annual-repeat cap (SP 3.2.6.1): a quality grade better
+     * than C3 becomes C3. C3, D1, F, NG, P, N and administrative grades
+     * are returned unchanged.
+     *
+     * Link-in repeats (SP 3.2.6.2) are not capped, so do not call this
+     * for them.
+     *
+     * @return the grade after the C3 cap
+     */
+    public Grade capAtC3() {
+        return (countsInQca && qcaPoints > C3.qcaPoints) ? C3 : this;
+    }
+
+    /**
+     * Returns the higher of two attempts at the same module (SP 3.2.6).
+     * Quality grades are ranked by QPV. A quality grade ranks above a
+     * grade with no QPV (P, N, I, X ...), so an I grade awarded during a
+     * repeat leaves the original grade standing (SP 3.2.3.14).
+     * If both are equal in rank, the first is returned.
+     *
+     * @param first the original grade
+     * @param second the repeat grade
+     * @return the grade that stands
+     */
+    public static Grade higherOf(Grade first, Grade second) {
+        Objects.requireNonNull(first, "First grade must not be null");
+        Objects.requireNonNull(second, "Second grade must not be null");
+
+        return second.standing() > first.standing() ? second : first;
+    }
+
+    /** Ranking value: QPV for quality grades, -1 for grades with no QPV. */
+    private double standing() {
+        return countsInQca ? qcaPoints : -1.0;
     }
 }
 

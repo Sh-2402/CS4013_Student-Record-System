@@ -1,4 +1,3 @@
-
 package main.rules;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -8,7 +7,9 @@ import main.model.Module;
 import main.model.ModuleResult;
 import main.model.Student;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
@@ -94,48 +95,53 @@ class QcaCalculatorTest {
     @Test
     void nullListsAreRejected() {
 
-        assertThrows(
-                NullPointerException.class,
-                () -> calc.overallQca(null)
-        );
+        assertThrows(NullPointerException.class,
+                () -> calc.overallQca(null));
 
-        assertThrows(
-                NullPointerException.class,
-                () -> calc.semesterQca(null)
-        );
+        assertThrows(NullPointerException.class,
+                () -> calc.semesterQca(null));
 
-        assertThrows(
-                NullPointerException.class,
-                () -> calc.weightedQca(null)
-        );
+        assertThrows(NullPointerException.class,
+                () -> calc.semesterQca(null, 2026, 1));
+
+        assertThrows(NullPointerException.class,
+                () -> calc.yearQca(null, 2026));
+
+        assertThrows(NullPointerException.class,
+                () -> calc.programmeQca(null, Set.of("A")));
+
+        assertThrows(NullPointerException.class,
+                () -> calc.weightedQca(null));
     }
 
     @Test
     void nullResultInsideListIsRejected() {
 
-        List<ModuleResult> list = java.util.Arrays.asList(
+        List<ModuleResult> list = Arrays.asList(
                 result("A", 6, Grade.A1),
                 null
         );
 
-        assertThrows(
-                NullPointerException.class,
-                () -> calc.overallQca(list)
-        );
+        assertThrows(NullPointerException.class,
+                () -> calc.overallQca(list));
+
+        assertThrows(NullPointerException.class,
+                () -> calc.yearQca(list, 2026));
+
+        assertThrows(NullPointerException.class,
+                () -> calc.programmeQca(list, Set.of("A")));
     }
 
     @Test
     void nullYearListIsRejected() {
 
-        List<List<ModuleResult>> years = java.util.Arrays.asList(
+        List<List<ModuleResult>> years = Arrays.asList(
                 List.of(result("A", 6, Grade.A1)),
                 null
         );
 
-        assertThrows(
-                NullPointerException.class,
-                () -> calc.weightedQca(years)
-        );
+        assertThrows(NullPointerException.class,
+                () -> calc.weightedQca(years));
     }
 
     // ---------- Fails and Compensating Fails ----------
@@ -251,29 +257,10 @@ class QcaCalculatorTest {
                 result("C", 6, 2027, 1, Grade.C3)
         );
 
-        assertEquals(
-                4.0,
-                calc.semesterQca(list, 2026, 1),
-                DELTA
-        );
-
-        assertEquals(
-                0.0,
-                calc.semesterQca(list, 2026, 2),
-                DELTA
-        );
-
-        assertEquals(
-                2.0,
-                calc.semesterQca(list, 2027, 1),
-                DELTA
-        );
-
-        assertEquals(
-                0.0,
-                calc.semesterQca(list, 2030, 1),
-                DELTA
-        );
+        assertEquals(4.0, calc.semesterQca(list, 2026, 1), DELTA);
+        assertEquals(0.0, calc.semesterQca(list, 2026, 2), DELTA);
+        assertEquals(2.0, calc.semesterQca(list, 2027, 1), DELTA);
+        assertEquals(0.0, calc.semesterQca(list, 2030, 1), DELTA);
     }
 
     @Test
@@ -283,15 +270,90 @@ class QcaCalculatorTest {
                 result("A", 6, Grade.A1)
         );
 
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> calc.semesterQca(list, 2026, 0)
+        assertThrows(IllegalArgumentException.class,
+                () -> calc.semesterQca(list, 2026, 0));
+
+        assertThrows(IllegalArgumentException.class,
+                () -> calc.semesterQca(list, 2026, 3));
+    }
+
+    // ---------- Year QCA ----------
+
+    @Test
+    void yearQcaCoversBothSemesters() {
+        // 2026: (4.0 x 6 + 2.0 x 6) / 12 = 3.0
+
+        List<ModuleResult> list = List.of(
+                result("A", 6, 2026, 1, Grade.A1),
+                result("B", 6, 2026, 2, Grade.C3),
+                result("C", 6, 2027, 1, Grade.F)
         );
 
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> calc.semesterQca(list, 2026, 3)
+        assertEquals(3.0, calc.yearQca(list, 2026), DELTA);
+        assertEquals(0.0, calc.yearQca(list, 2027), DELTA);
+    }
+
+    @Test
+    void yearQcaForYearWithNoResultsIsZero() {
+
+        List<ModuleResult> list = List.of(
+                result("A", 6, 2026, 1, Grade.A1)
         );
+
+        assertEquals(0.0, calc.yearQca(list, 2030), DELTA);
+    }
+
+    @Test
+    void yearQcaIgnoresNonQualityGrades() {
+
+        List<ModuleResult> list = List.of(
+                result("A", 6, 2026, 1, Grade.B1),
+                result("B", 6, 2026, 2, Grade.P),
+                result("C", 6, 2026, 2, Grade.EX)
+        );
+
+        assertEquals(3.2, calc.yearQca(list, 2026), DELTA);
+    }
+
+    // ---------- Programme QCA ----------
+
+    @Test
+    void programmeQcaUsesOnlyProgrammeModules() {
+        // A and B: (4.0 x 6 + 2.0 x 6) / 12 = 3.0
+
+        List<ModuleResult> list = List.of(
+                result("A", 6, Grade.A1),
+                result("B", 6, Grade.C3),
+                result("C", 6, Grade.F)
+        );
+
+        assertEquals(3.0,
+                calc.programmeQca(list, Set.of("A", "B")), DELTA);
+
+        assertEquals(0.0,
+                calc.programmeQca(list, Set.of("C")), DELTA);
+    }
+
+    @Test
+    void programmeQcaWithNoMatchingModulesIsZero() {
+
+        List<ModuleResult> list = List.of(
+                result("A", 6, Grade.A1)
+        );
+
+        assertEquals(0.0, calc.programmeQca(list, Set.of()), DELTA);
+        assertEquals(0.0, calc.programmeQca(list, Set.of("Z")), DELTA);
+    }
+
+    @Test
+    void programmeQcaRejectsNullModuleCodes() {
+
+        List<ModuleResult> list = List.of(
+                result("A", 6, Grade.A1)
+        );
+
+        assertThrows(NullPointerException.class,
+                () -> calc.programmeQca(list, null));
     }
 
     // ---------- Three-Year Part 2 Weighting ----------
@@ -369,9 +431,7 @@ class QcaCalculatorTest {
                 List.of(result("D", 6, Grade.A1))
         );
 
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> calc.weightedQca(years)
-        );
+        assertThrows(IllegalArgumentException.class,
+                () -> calc.weightedQca(years));
     }
 }
