@@ -16,19 +16,15 @@ public class ModuleTest {
         Module m = new Module ("CS101", "Introduction to Programming", 6, 1, "L001");
         assertEquals("CS101", m.getCode());
     }
-
-    @Test 
-    void zeroCreditsThrowsException(){
-        assertThrows(IllegalArgumentException.class, () -> {
-            Module m = new Module ("CS101", "Introduction to Programming", 0, 1, "L001");
-        });
-    }
-
     @Test
-    void semesterThreeThrowsException(){
-        assertThrows(IllegalArgumentException.class, () -> {
-            Module m = new Module ("CS101", "Introduction to Programming", 6, 3, "L001");
-        });
+    void zeroCreditsThrowsException() {
+    assertThrows(IllegalArgumentException.class,
+        () -> new Module("CS101", "Introduction to Programming", 0, 1, "L001"));
+    }
+    @Test
+void semesterThreeThrowsException() {
+    assertThrows(IllegalArgumentException.class,
+        () -> new Module("CS101", "Introduction to Programming", 6, 3, "L001"));
     }
 
     @Test 
