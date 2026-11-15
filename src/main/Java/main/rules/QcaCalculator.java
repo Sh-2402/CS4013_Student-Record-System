@@ -8,7 +8,7 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * Calculates semester, cumulative and weighted Quality Credit Averages.
+ * Calculates semester, year, programme, cumulative and weighted Quality Credit Averages.
  *
  * UL Handbook of Academic Regulations and Procedures 2026/27:
  *

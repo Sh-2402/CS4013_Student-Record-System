@@ -52,7 +52,7 @@ public enum Grade {
 
     /*
      * NOTE:
-      * Table 4.1 (SP 3.2.2.5) lists an "S" grade among those not awarded for
+     * Table 4.1 (SP 3.2.2.5) lists an "S" grade among those not awarded for
      * normal participation, and the document-control history mentions S2.
      * The handbook does not define them, so their meaning and behaviour need
      * confirmation from the lecturer before they are added to this enum.
