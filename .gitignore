@@ -1,1 +1,15 @@
+# Compiled output
 *.class
+out/
+.dist/
+
+# IntelliJ personal settings (shared project config in .idea is still committed)
+.idea/workspace.xml
+.idea/shelf/
+
+# Files created by running tests
+Data/test_*.csv
+
+# OS files
+Thumbs.db
+.DS_Store
