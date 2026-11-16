@@ -327,6 +327,24 @@ class GradeTest {
         assertEquals(Grade.C3, Grade.higherOf(Grade.I, Grade.C3));
     }
 
+     @Test
+    void passOnRepeatReplacesEarlierN() {
+        // Pass/fail module: N then P must end as P.
+        assertEquals(Grade.P, Grade.higherOf(Grade.N, Grade.P));
+    }
+
+    @Test
+    void nOnRepeatDoesNotReplaceEarlierP() {
+        assertEquals(Grade.P, Grade.higherOf(Grade.P, Grade.N));
+    }
+
+    @Test
+    void passBeatsIncompleteButNotAnotherPass() {
+        assertEquals(Grade.P, Grade.higherOf(Grade.I, Grade.P));
+        assertEquals(Grade.P, Grade.higherOf(Grade.P, Grade.I));
+        assertEquals(Grade.P, Grade.higherOf(Grade.P, Grade.P));
+    }
+
     @Test
     void higherOfRejectsNulls() {
         assertThrows(NullPointerException.class,
