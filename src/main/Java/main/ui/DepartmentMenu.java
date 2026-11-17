@@ -12,22 +12,23 @@ import java.util.Objects;
 public class DepartmentMenu {
 
     private final InputHelper input;
+    private final String departmentId;
 
     /**
-     * Creates the department menu.
+     * Creates the department menu for the user who logged in.
      *
-     * @param input the shared input helper created by Main
+     * @param input        the shared input helper created by Main
+     * @param departmentId the ID of the logged-in department user
      */
-    public DepartmentMenu(InputHelper input) {
+    public DepartmentMenu(InputHelper input, String departmentId) {
         this.input = Objects.requireNonNull(input, "Input helper must not be null");
+        this.departmentId = Objects.requireNonNull(departmentId, "Department ID must not be null");
     }
 
     /**
      * Shows the department menu until the user logs out.
-     *
-     * @param departmentId the ID of the logged-in department user
      */
-    public void show(String departmentId) {
+    public void start() {
         boolean loggedIn = true;
 
         while (loggedIn) {
