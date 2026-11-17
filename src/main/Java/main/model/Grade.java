@@ -170,6 +170,8 @@ public enum Grade {
      * Quality grades are ranked by QPV. A quality grade ranks above a
      * grade with no QPV (P, N, I, X ...), so an I grade awarded during a
      * repeat leaves the original grade standing (SP 3.2.3.14).
+     * In a pass/fail module P ranks above N, so a pass on the repeat
+     * replaces an earlier N
      * If both are equal in rank, the first is returned.
      *
      * @param first the original grade
@@ -183,9 +185,16 @@ public enum Grade {
         return second.standing() > first.standing() ? second : first;
     }
 
-    /** Ranking value: QPV for quality grades, -1 for grades with no QPV. */
+    /** Ranking value: QPV for quality grades, -1 for grades with no QPV.
+     * Quality grades rank by QPV (0.00 to 4.00). P ranks just below them
+     * (-0.5) so that it beats N and the other grades with no QPV (-1.0).
+     */
+
     private double standing() {
-        return countsInQca ? qcaPoints : -1.0;
+        if (countsInQca) {
+            return qcaPoints;
+        }
+        return this == P ? -0.5 : -1.0;
     }
 }
 

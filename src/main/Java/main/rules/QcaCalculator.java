@@ -30,7 +30,21 @@ import java.util.Set;
  * A three-year Part 2 programme uses year weightings of 1:2:2.
  *
  * The handbook gives no rounding rule, so QCA values are not rounded.
- * 
+ *
+ * No quality hours: if the results contain no quality-graded modules (for
+ * example only P or EX), every QCA method returns 0.0. That is not a real
+ * "0.00 average". Use hasQualityHours(...) to tell the two cases apart
+ * before treating a result as below the minimum standard.
+ *
+ * Comparing with the minimum: QCA is a double, so a sum such as 2.00 can
+ * come out as 1.9999999999999998. Use meetsMinimumStandard(...) instead of
+ * comparing with 2.00 directly. It covers the QCA part of AR 1.5.3 only;
+ * the "full credits in all modules" part is checked separately.
+ *
+ * Assumption: weighted QCA multiplies each year's QCS and quality hours
+ * by that year's weight (1, 2, 2) and then divides, rather than weighting
+ * the three year QCAs. The handbook does not say which is meant.
+ *
  * IMPORTANT:
  * The results supplied to this calculator should contain the final grade
  * that stands for each module after repeat rules have been applied, and 
@@ -45,6 +59,34 @@ public class QcaCalculator {
      * Year 3 of Part 2 = 2
      */
     private static final int[] PART2_THREE_YEAR_WEIGHTS = {1, 2, 2};
+
+    /** Minimum cumulative QCA for progression and awards (AR 1.5.3, MS 2.6.1). */
+    public static final double MIN_QCA = 2.00;
+
+    /** Tolerance for floating-point rounding when comparing QCA values. */
+    private static final double EPSILON = 1e-9;
+
+    /**
+     * Returns true if the results contain at least one quality-graded
+     * module, i.e. a QCA can actually be calculated.
+     *
+     * @param results module results
+     * @return true if there are quality hours
+     */
+    public boolean hasQualityHours(List<ModuleResult> results) {
+        return totals(results)[1] > 0;
+    }
+
+    /**
+     * Returns true if a QCA meets the minimum standard of 2.00
+     * (AR 1.5.3), allowing for floating-point rounding.
+     *
+     * @param qca a QCA value
+     * @return true if qca is at least MIN_QCA
+     */
+    public boolean meetsMinimumStandard(double qca) {
+        return qca + EPSILON >= MIN_QCA;
+    }
 
     // ---------- Semester QCA ----------
 
@@ -119,7 +161,7 @@ public class QcaCalculator {
         return calculateQca(inYear);
     }
 
-     // ---------- Programme QCA ----------
+    // ---------- Programme QCA ----------
 
     /**
      * Calculates QCA for the modules that belong to one programme.

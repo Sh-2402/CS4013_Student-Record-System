@@ -246,6 +246,57 @@ class QcaCalculatorTest {
         assertEquals(4.0, calc.overallQca(list), DELTA);
     }
 
+
+    // ---------- Quality Hours and Minimum Standard ----------
+
+    @Test
+    void hasQualityHoursIsTrueForQualityGradesIncludingFails() {
+        // F has quality hours even though its QCS is zero.
+        assertTrue(calc.hasQualityHours(List.of(result("A", 6, Grade.F))));
+        assertTrue(calc.hasQualityHours(List.of(result("A", 6, Grade.A1))));
+    }
+
+    @Test
+    void hasQualityHoursIsFalseWhenThereAreNoQualityGrades() {
+        List<ModuleResult> list = List.of(
+                result("A", 6, Grade.P),
+                result("B", 6, Grade.N),
+                result("C", 6, Grade.EX),
+                result("D", 6, Grade.I)
+        );
+
+        assertFalse(calc.hasQualityHours(list));
+        assertFalse(calc.hasQualityHours(List.of()));
+    }
+
+    @Test
+    void hasQualityHoursRejectsNullListAndNullResults() {
+        assertThrows(NullPointerException.class,
+                () -> calc.hasQualityHours(null));
+
+        List<ModuleResult> list = Arrays.asList(
+                result("A", 6, Grade.A1),
+                null
+        );
+
+        assertThrows(NullPointerException.class,
+                () -> calc.hasQualityHours(list));
+    }
+
+    @Test
+    void meetsMinimumStandardChecksForQcaOfTwoOrHigher() {
+        assertTrue(calc.meetsMinimumStandard(2.0));
+        assertTrue(calc.meetsMinimumStandard(2.5));
+        assertFalse(calc.meetsMinimumStandard(1.9));
+    }
+
+    @Test
+    void meetsMinimumStandardAllowsFloatingPointTolerance() {
+        // A mathematically exact 2.00 can be represented slightly below 2.00.
+        assertTrue(calc.meetsMinimumStandard(1.9999999999999998));
+        assertFalse(calc.meetsMinimumStandard(1.999999));
+    }
+
     // ---------- Semester Filtering ----------
 
     @Test
@@ -435,3 +486,5 @@ class QcaCalculatorTest {
                 () -> calc.weightedQca(years));
     }
 }
+
+
