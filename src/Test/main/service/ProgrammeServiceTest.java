@@ -39,19 +39,20 @@ public class ProgrammeServiceTest {
     }
 
     @Test
-void addProgrammeThenFindIt() {
-    service.addProgramme(new UndergraduateProgramme("LM051", "Computer Systems", "CSIS"));
-    assertNotNull(service.findProgramme("LM051"));
-}
-
-@Test 
-void dulicateProgrammeThrowsException() {
-    service.addProgramme(new UndergraduateProgramme("LM051", "Computer Systems", "CSIS"));
-    assertThrows(IllegalArgumentException.class, () -> {
+    void addProgrammeThenFindIt() {
         service.addProgramme(new UndergraduateProgramme("LM051", "Computer Systems", "CSIS"));
-    });
-}
-    @Test 
+        assertNotNull(service.findProgramme("LM051"));
+    }
+
+    @Test
+    void duplicateProgrammeThrowsException() {
+        service.addProgramme(new UndergraduateProgramme("LM051", "Computer Systems", "CSIS"));
+        assertThrows(IllegalArgumentException.class, () -> {
+            service.addProgramme(new UndergraduateProgramme("LM051", "Computer Systems", "CSIS"));
+        });
+    }
+
+    @Test
     void findMissingProgrammeReturnsNull() {
         assertNull(service.findProgramme("XX999"));
     }
