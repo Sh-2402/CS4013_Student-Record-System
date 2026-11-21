@@ -10,4 +10,9 @@ public class PostgraduateProgramme extends Programme {
     public int getDurationYears() {
         return 1;
     }
+
+    @Override 
+    public String getType() {
+        return "POSTGRAD";
+    }
 }
