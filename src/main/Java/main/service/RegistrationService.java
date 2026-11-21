@@ -38,7 +38,4 @@ public class RegistrationService {
         registrationRepository.save(reg);
     }
 
-    public void updateRegistration(Registration r) {
-        registrationRepository.update(r);
-    }
 }
