@@ -1,0 +1,4 @@
+studentId,programmeCode,startYear,currentYear,status
+101,LM051,2025,2,ACTIVE
+102,LM118,2024,3,ACTIVE
+103,LM050,2025,2,REPEATING
