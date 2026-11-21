@@ -23,14 +23,14 @@ public abstract class Programme {
     public String getDepartment() {
         return department;
     }
-      
 
     public abstract int getDurationYears();
 
-    @Override 
+    public abstract String getType();
+
+    @Override
     public String toString() {
         return code + " - " + title + " (" + department + ")";
     }
-
 
 }
