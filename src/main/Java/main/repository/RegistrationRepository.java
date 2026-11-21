@@ -4,6 +4,11 @@ import java.util.ArrayList;
 import java.util.List;
 import main.model.Registration;
 
+/**
+ * Stores student registrations in registrations.csv.
+ *
+ * <p>File format: studentId,programmeCode,startYear,currentYear,status</p>
+ */
 public class RegistrationRepository {
 
     private final String filePath;
