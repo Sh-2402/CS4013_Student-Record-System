@@ -1,8 +1,14 @@
-import main.model.Module;
-import main.repository.CsvUtil;
+import main.model.Registration;
+import main.model.Student;
+import main.repository.ModuleRepository;
+import main.repository.ProgrammeRepository;
+import main.repository.RegistrationRepository;
 import main.repository.ResultRepository;
 import main.repository.StudentRepository;
 import main.rules.QcaCalculator;
+import main.service.ProgrammeService;
+import main.service.ProgressionService;
+import main.service.RegistrationService;
 import main.service.ResultsService;
 import main.service.StudentService;
 import main.service.TranscriptService;
@@ -13,9 +19,6 @@ import main.ui.LoginMenu;
 import main.ui.StudentMenu;
 
 import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 /**
  * Entry point for the UL Student Records System.
@@ -35,13 +38,20 @@ public class Main {
     private static final String ROLE_FACULTY = "FACULTY";
     private static final String ROLE_DEPARTMENT = "DEPARTMENT";
 
+    private static final String STUDENTS_FILE = "Data/students.csv";
+    private static final String PROGRAMMES_FILE = "Data/programme.csv";
     private static final String MODULES_FILE = "Data/modules.csv";
+    private static final String REGISTRATIONS_FILE = "Data/registrations.csv";
     private static final String RESULTS_FILE = "Data/results.csv";
 
     private final InputHelper input;
     private final LoginMenu loginMenu;
+    private final StudentService studentService;
+    private final ProgrammeService programmeService;
+    private final RegistrationService registrationService;
     private final ResultsService resultsService;
     private final TranscriptService transcriptService;
+    private final ProgressionService progressionService;
 
     /**
      * Creates the shell and the shared services.
@@ -53,20 +63,29 @@ public class Main {
         input = new InputHelper();
         loginMenu = new LoginMenu(input);
 
-        StudentService studentService = new StudentService(new StudentRepository());
-        Map<String, Module> modules = loadModules();
+        // One StudentRepository is shared, so a student added in the
+        // department menu is seen everywhere straight away.
+        StudentRepository studentRepository = new StudentRepository(STUDENTS_FILE);
+        studentService = new StudentService(studentRepository);
+
+        programmeService = new ProgrammeService(
+                new ProgrammeRepository(PROGRAMMES_FILE), new ModuleRepository(MODULES_FILE));
+
+        registrationService = new RegistrationService(
+                new RegistrationRepository(REGISTRATIONS_FILE), studentService, programmeService);
 
         ResultRepository resultRepository = new ResultRepository(
-                Path.of(RESULTS_FILE), studentService::findById, modules::get);
+                Path.of(RESULTS_FILE), studentService::findById, programmeService::findModule);
 
-        // TODO: replace "s -> true" with a registration check once
-        // RegistrationService exists (Austin). Students are loaded without
-        // a Registration for now, so the default check would reject them all.
-        resultsService = new ResultsService(
-                resultRepository, studentService::findById, modules::get, s -> true);
+        // Results can only be recorded for students with an active registration.
+        resultsService = new ResultsService(resultRepository,
+                studentService::findById, programmeService::findModule, this::isRegistered);
 
         transcriptService = new TranscriptService(
                 resultsService, new QcaCalculator(), studentService::findById);
+
+        progressionService = new ProgressionService(
+                studentRepository, transcriptService, registrationService, programmeService);
     }
 
     /**
@@ -123,41 +142,21 @@ public class Main {
             case ROLE_FACULTY ->
                     new FacultyMenu(input, resultsService, transcriptService, userId).start();
             case ROLE_DEPARTMENT ->
-                    new DepartmentMenu(input, userId).start();
+                    new DepartmentMenu(input, progressionService, transcriptService, studentService,
+                            programmeService, registrationService, userId).start();
             default -> System.out.println("Unknown role '" + role
                     + "' for user " + userId + ". Contact an administrator.");
         }
     }
 
     /**
-     * Loads modules.csv into a map keyed by module code.
+     * Returns whether a student has a registration that is not withdrawn.
      *
-     * <p>TEMPORARY: replace with ModuleRepository (Austin) once it exists.</p>
-     *
-     * @return modules by code
+     * @param student the student
+     * @return true if the student can have results recorded
      */
-    private static Map<String, Module> loadModules() {
-        Map<String, Module> modules = new HashMap<>();
-        List<String[]> rows = CsvUtil.readAll(MODULES_FILE);
-
-        for (int i = 1; i < rows.size(); i++) {
-            String[] row = rows.get(i);
-
-            if (row.length != 5) {
-                continue;
-            }
-
-            try {
-                Module module = new Module(row[0].trim(), row[1].trim(),
-                        Integer.parseInt(row[2].trim()),
-                        Integer.parseInt(row[3].trim()), row[4].trim());
-                modules.put(module.getCode(), module);
-            } catch (IllegalArgumentException e) {
-                System.err.println("Skipping bad module line " + (i + 1)
-                        + " in " + MODULES_FILE + ": " + CsvUtil.joinFields(row));
-            }
-        }
-
-        return modules;
+    private boolean isRegistered(Student student) {
+        Registration registration = registrationService.findRegistration(student.getId());
+        return registration != null && !"WITHDRAWN".equals(registration.getStatus());
     }
 }
