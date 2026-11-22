@@ -1,3 +1,4 @@
+
 package main.repository;
 
 import java.util.ArrayList;
@@ -7,118 +8,56 @@ import main.model.Registration;
 /**
  * Stores student registrations in registrations.csv.
  *
- * <p>File format: studentId,programmeCode,startYear,currentYear,status</p>
+ * File format: studentId,programmeCode,startYear,currentYear,status
  */
 public class RegistrationRepository {
 
-<<<<<<< HEAD
-=======
-    private static final String[] HEADER =
-            {"studentId", "programmeCode", "startYear", "currentYear", "status"};
+    private static final String[] HEADER = {
+        "studentId", "programmeCode", "startYear", "currentYear", "status"
+    };
 
->>>>>>> e68ca3bc0861b094fc5669141b2d1d7e2c9d44c4
     private final String filePath;
 
     public RegistrationRepository(String filePath) {
         this.filePath = filePath;
     }
 
-<<<<<<< HEAD
-=======
     /**
-     * Reads every registration from the file. Broken lines are skipped.
-     *
-     * @return all registrations
+     * Reads every registration from the file.
+     * Invalid records are skipped.
      */
->>>>>>> e68ca3bc0861b094fc5669141b2d1d7e2c9d44c4
     public List<Registration> loadAll() {
         List<String[]> rows = CsvUtil.readAll(filePath);
         List<Registration> registrations = new ArrayList<>();
 
-<<<<<<< HEAD
-        for (int i = 1; i < rows.size(); i++) { // start at 1 to skip the header
+        for (int i = 1; i < rows.size(); i++) {
             String[] r = rows.get(i);
-            if (r.length < 5) { // skip blank or broken lines
-                continue;
-            }
 
-            Registration reg = new Registration(r[0], r[1], Integer.parseInt(r[2]), Integer.parseInt(r[3]), r[4]);
-            registrations.add(reg);
-=======
-        for (int i = 1; i < rows.size(); i++) {      // start at 1 to skip the header
-            String[] r = rows.get(i);
-            if (r.length < 5) {                        // skip blank or broken lines
+            if (r.length != 5) {
+                System.err.println("Skipping invalid line " + (i + 1));
                 continue;
             }
 
             try {
-                registrations.add(new Registration(r[0].trim(), r[1].trim(),
-                        Integer.parseInt(r[2].trim()), Integer.parseInt(r[3].trim()), r[4].trim()));
-            } catch (IllegalArgumentException e) {     // bad number or status
-                System.err.println("Skipping bad line " + (i + 1) + " in " + filePath);
+                registrations.add(new Registration(
+                    r[0].trim(),
+                    r[1].trim(),
+                    Integer.parseInt(r[2].trim()),
+                    Integer.parseInt(r[3].trim()),
+                    r[4].trim()
+                ));
+            } catch (IllegalArgumentException e) {
+                System.err.println(
+                    "Skipping bad line " + (i + 1) + " in " + filePath
+                );
             }
->>>>>>> e68ca3bc0861b094fc5669141b2d1d7e2c9d44c4
         }
+
         return registrations;
     }
 
-<<<<<<< HEAD
-    public Registration findByStudent(String studentId) {
-        List<Registration> registrations = loadAll();
-        for (Registration reg : registrations) {
-            if (reg.getStudentId().equals(studentId)) {
-                return reg;
-            }
-        }
-        return null; // Return null if no registration with the given studentId is found
-    }
-
-    public void save(Registration r) {
-        List<Registration> registrations = loadAll();
-        registrations.add(r);
-        List<String[]> rows = new ArrayList<>();
-        rows.add(new String[] { "studentId", "programmeCode", "startYear", "currentYear", "status" }); // header
-        for (Registration reg : registrations) {
-            rows.add(new String[] { reg.getStudentId(), reg.getProgrammeCode(), String.valueOf(reg.getStartYear()),
-                    String.valueOf(reg.getCurrentYear()), reg.getStatus() });
-        }
-        CsvUtil.writeAll(filePath, rows);
-    }
-
-    public List<Registration> findByProgramme(String programmeCode) {
-        List<Registration> registrations = loadAll();
-        List<Registration> result = new ArrayList<>();
-        for (Registration reg : registrations) {
-            if (reg.getProgrammeCode().equals(programmeCode)) {
-                result.add(reg);
-            }
-        }
-        return result;
-    }
-
-    public void update(Registration updated) {
-        List<Registration> registrations = loadAll();
-
-        for (int i = 0; i < registrations.size(); i++) {
-            if (registrations.get(i).getStudentId().equals(updated.getStudentId())) {
-                registrations.set(i, updated);
-            }
-        }
-
-        List<String[]> rows = new ArrayList<>();
-        rows.add(new String[] { "studentId", "programmeCode", "startYear", "currentYear", "status" });
-        for (Registration reg : registrations) {
-            rows.add(new String[] { reg.getStudentId(), reg.getProgrammeCode(), String.valueOf(reg.getStartYear()),
-                    String.valueOf(reg.getCurrentYear()), reg.getStatus() });
-        }
-        CsvUtil.writeAll(filePath, rows);
-    }
-
-=======
     /**
      * Adds a new registration to the file.
-     *
-     * @param r the registration to add
      */
     public void save(Registration r) {
         List<Registration> registrations = loadAll();
@@ -127,11 +66,7 @@ public class RegistrationRepository {
     }
 
     /**
-     * Replaces the saved registration for the same student, for example
-     * after advanceYear() or changeStatus().
-     *
-     * @param r the changed registration
-     * @throws IllegalArgumentException if the student has no saved registration
+     * Updates an existing student's registration.
      */
     public void update(Registration r) {
         List<Registration> registrations = loadAll();
@@ -143,15 +78,14 @@ public class RegistrationRepository {
                 return;
             }
         }
+
         throw new IllegalArgumentException(
-                "No registration found for student " + r.getStudentId());
+            "No registration found for student " + r.getStudentId()
+        );
     }
 
     /**
-     * Finds a student's registration.
-     *
-     * @param id the student ID
-     * @return the registration, or null if the student is not registered
+     * Finds a registration using the student ID.
      */
     public Registration findByStudent(String id) {
         for (Registration r : loadAll()) {
@@ -163,10 +97,7 @@ public class RegistrationRepository {
     }
 
     /**
-     * Finds every registration on a programme.
-     *
-     * @param code the programme code
-     * @return the registrations on that programme (empty if none)
+     * Finds all registrations for a particular programme.
      */
     public List<Registration> findByProgramme(String code) {
         List<Registration> onProgramme = new ArrayList<>();
@@ -176,20 +107,27 @@ public class RegistrationRepository {
                 onProgramme.add(r);
             }
         }
+
         return onProgramme;
     }
 
-    /** Writes the header and all registrations back to the file. */
+    /**
+     * Writes all registrations to the CSV file.
+     */
     private void writeAll(List<Registration> registrations) {
         List<String[]> rows = new ArrayList<>();
         rows.add(HEADER);
 
         for (Registration r : registrations) {
-            rows.add(new String[]{r.getStudentId(), r.getProgrammeCode(),
-                    String.valueOf(r.getStartYear()), String.valueOf(r.getCurrentYear()),
-                    r.getStatus()});
+            rows.add(new String[] {
+                r.getStudentId(),
+                r.getProgrammeCode(),
+                String.valueOf(r.getStartYear()),
+                String.valueOf(r.getCurrentYear()),
+                r.getStatus()
+            });
         }
+
         CsvUtil.writeAll(filePath, rows);
     }
->>>>>>> e68ca3bc0861b094fc5669141b2d1d7e2c9d44c4
 }
