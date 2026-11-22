@@ -7,9 +7,13 @@ import main.model.Registration;
 /**
  * Stores student registrations in registrations.csv.
  *
- * <p>File format: studentId,programmeCode,startYear,currentYear,status</p>
+ * File format: studentId,programmeCode,startYear,currentYear,status
  */
 public class RegistrationRepository {
+
+    private static final String[] HEADER = {
+        "studentId", "programmeCode", "startYear", "currentYear", "status"
+    };
 
     private final String filePath;
 
@@ -17,6 +21,10 @@ public class RegistrationRepository {
         this.filePath = filePath;
     }
 
+    /**
+     * Reads every registration from the file.
+     * Invalid records are skipped.
+     */
     public List<Registration> loadAll() {
         List<String[]> rows = CsvUtil.readAll(filePath);
         List<Registration> registrations = new ArrayList<>();
@@ -33,6 +41,7 @@ public class RegistrationRepository {
         return registrations;
     }
 
+<<<<<<< HEAD
     public Registration findByStudent(String studentId) {
         List<Registration> registrations = loadAll();
         for (Registration reg : registrations) {
@@ -84,41 +93,7 @@ public class RegistrationRepository {
         CsvUtil.writeAll(filePath, rows);
     }
 
-
-    private static final String[] HEADER =
-            {"studentId", "programmeCode", "startYear", "currentYear", "status"};
-
-    private final String filePath;
-
-    public RegistrationRepository(String filePath) {
-        this.filePath = filePath;
-    }
-
-    /**
-     * Reads every registration from the file. Broken lines are skipped.
-     *
-     * @return all registrations
-     */
-    public List<Registration> loadAll() {
-        List<String[]> rows = CsvUtil.readAll(filePath);
-        List<Registration> registrations = new ArrayList<>();
-
-        for (int i = 1; i < rows.size(); i++) {      // start at 1 to skip the header
-            String[] r = rows.get(i);
-            if (r.length < 5) {                        // skip blank or broken lines
-                continue;
-            }
-
-            try {
-                registrations.add(new Registration(r[0].trim(), r[1].trim(),
-                        Integer.parseInt(r[2].trim()), Integer.parseInt(r[3].trim()), r[4].trim()));
-            } catch (IllegalArgumentException e) {     // bad number or status
-                System.err.println("Skipping bad line " + (i + 1) + " in " + filePath);
-            }
-        }
-        return registrations;
-    }
-
+=======
     /**
      * Adds a new registration to the file.
      *
@@ -195,4 +170,5 @@ public class RegistrationRepository {
         }
         CsvUtil.writeAll(filePath, rows);
     }
+>>>>>>> e68ca3bc0861b094fc5669141b2d1d7e2c9d44c4
 }
