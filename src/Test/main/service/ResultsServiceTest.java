@@ -39,6 +39,7 @@ class ResultsServiceTest {
 
         modules.put("CS1", new Module("CS1", "First Module", 6, 1, "L1"));
         modules.put("CS2", new Module("CS2", "Second Module", 6, 2, "L1"));
+        modules.put("CS3", new Module("CS3", "Third Module", 6, 1, "L1"));
 
         repository = new ResultRepository(
                 tempDir.resolve("results.csv"), students::get, modules::get);
@@ -275,6 +276,130 @@ class ResultsServiceTest {
         assertTrue(msg.contains("already recorded"));
     }
 
+    // ---------- Repeat rules (credits already held) ----------
+
+    @Test
+    void moduleWithCreditsCannotBeAttemptedAgain() {
+        service.recordResult(ANN, "CS1", 2026, 1, Grade.C3);
+
+        String msg = messageOf(
+                () -> service.recordResult(ANN, "CS1", 2027, 1, Grade.A1));
+
+        assertTrue(msg.contains("already has credits for CS1"));
+        assertEquals(1, repository.findAll().size());
+    }
+
+    @Test
+    void passedPassFailModuleCannotBeAttemptedAgain() {
+        service.recordResult(ANN, "CS1", 2026, 1, Grade.P);
+
+        assertThrows(IllegalArgumentException.class,
+                () -> service.recordResult(ANN, "CS1", 2027, 1, Grade.P));
+    }
+
+    @Test
+    void failedModuleCanBeRepeated() {
+        service.recordResult(ANN, "CS1", 2026, 1, Grade.F);
+
+        assertDoesNotThrow(
+                () -> service.recordResult(ANN, "CS1", 2027, 1, Grade.C3));
+    }
+
+    @Test
+    void incompleteAndNotGradedModulesCanBeRepeated() {
+        modules.put("CS3", new Module("CS3", "Third Module", 6, 1, "L1"));
+        service.recordResult(ANN, "CS1", 2026, 1, Grade.NG);
+        service.recordResult(ANN, "CS3", 2026, 1, Grade.I);
+
+        assertDoesNotThrow(
+                () -> service.recordResult(ANN, "CS1", 2027, 1, Grade.C3));
+        assertDoesNotThrow(
+                () -> service.recordResult(ANN, "CS3", 2027, 1, Grade.C3));
+    }
+
+    @Test
+    void d1CarriesCreditsButCanStillBeRepeated() {
+        service.recordResult(ANN, "CS1", 2026, 1, Grade.D1);
+
+        assertDoesNotThrow(
+                () -> service.recordResult(ANN, "CS1", 2027, 1, Grade.C3));
+    }
+
+    @Test
+    void repeatIsBlockedOnceTheStandingGradeHasCredits() {
+        service.recordResult(ANN, "CS1", 2026, 1, Grade.F);
+        service.recordResult(ANN, "CS1", 2027, 1, Grade.C3);
+
+        String msg = messageOf(
+                () -> service.recordResult(ANN, "CS1", 2028, 1, Grade.C3));
+
+        assertTrue(msg.contains("grade C3"));
+    }
+
+    @Test
+    void repeatRuleAppliesPerStudent() {
+        service.recordResult(ANN, "CS1", 2026, 1, Grade.A1);
+
+        assertDoesNotThrow(
+                () -> service.recordResult(BOB, "CS1", 2027, 1, Grade.C3));
+    }
+
+    // ---------- Administrative grades and withdrawn students ----------
+
+    @Test
+    void lecturerCannotAwardAdministrativeGrades() {
+        Grade[] notAwarded = {Grade.G, Grade.EX, Grade.R, Grade.RE,
+                Grade.W, Grade.X, Grade.Y};
+
+        for (Grade g : notAwarded) {
+            String msg = messageOf(() -> service.recordResult(
+                    "L1", ANN, "CS1", 2026, 1, g));
+            assertTrue(msg.contains("cannot be awarded by a lecturer"),
+                    g + " should be refused");
+        }
+        assertTrue(repository.findAll().isEmpty());
+    }
+
+    @Test
+    void lecturerCanAwardOtherGradesIncludingIncomplete() {
+        assertDoesNotThrow(() -> service.recordResult(
+                "L1", ANN, "CS1", 2026, 1, Grade.I));
+    }
+
+    @Test
+    void methodWithoutLecturerIdMayRecordAdministrativeGrades() {
+        assertDoesNotThrow(
+                () -> service.recordResult(ANN, "CS1", 2026, 1, Grade.EX));
+    }
+
+    @Test
+    void defaultConstructorRejectsWithdrawnStudent() {
+        Student dan = new Student("Dan", "104", "dan@ul.ie",
+                new Registration("104", "LM118", 2026, 1, "WITHDRAWN"));
+        students.put("104", dan);
+
+        ResultsService defaultService = new ResultsService(
+                repository, students::get, modules::get);
+
+        String msg = messageOf(() -> defaultService.recordResult(
+                "104", "CS1", 2026, 1, Grade.A1));
+
+        assertTrue(msg.contains("not registered"));
+    }
+
+    @Test
+    void defaultConstructorAcceptsRepeatingStudent() {
+        Student eve = new Student("Eve", "105", "eve@ul.ie",
+                new Registration("105", "LM118", 2026, 2, "REPEATING"));
+        students.put("105", eve);
+
+        ResultsService defaultService = new ResultsService(
+                repository, students::get, modules::get);
+
+        assertDoesNotThrow(() -> defaultService.recordResult(
+                "105", "CS1", 2026, 1, Grade.B1));
+    }
+
     // ---------- Persistence ----------
 
     @Test
@@ -294,7 +419,7 @@ class ResultsServiceTest {
     void getResultsFiltersByStudentYearAndSemester() {
         service.recordResult(ANN, "CS1", 2026, 1, Grade.A1);
         service.recordResult(ANN, "CS2", 2026, 2, Grade.B1);
-        service.recordResult(ANN, "CS1", 2027, 1, Grade.C3);
+        service.recordResult(ANN, "CS3", 2027, 1, Grade.C3);
         service.recordResult(BOB, "CS1", 2026, 1, Grade.F);
 
         assertEquals(3, service.getResults(ANN).size());
