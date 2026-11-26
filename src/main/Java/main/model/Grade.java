@@ -1,16 +1,19 @@
-
 package main.model;
 
 import java.util.Objects;
 
 /**
- * Module grades from the UL Handbook of Academic Regulations
- * and Procedures 2026/27.
+ * This enum stores all the module grades a student can get at UL,
+ * based on the Handbook of Academic Regulations and Procedures 2026/27.
+ *
+ * I used an enum because there is a fixed set of grades that never
+ * changes while the program runs. Each grade is a single object that
+ * knows its own rules, so other classes don't need long if-else chains.
  *
  * Table 2.1 (MS 2.5.2): academic module grades.
  * Table 2.2 (MS 2.5.5): administrative grades.
  *
- * Flags per grade:
+ * Every grade has five values: 
  * - qcaPoints: quality point value (QPV).
  * - creditsAwarded: whether module credits are awarded.
  * - countsInQca: whether the grade contributes to QCA.
@@ -21,7 +24,7 @@ import java.util.Objects;
  */
 public enum Grade {
 
-    // ---- Table 2.1: quality-graded modules ----
+    // Quality grades (Table 2.1)
     A1(4.00, true,  true,  false, false),
     A2(3.60, true,  true,  false, false),
     B1(3.20, true,  true,  false, false),
@@ -31,14 +34,14 @@ public enum Grade {
     C2(2.40, true,  true,  false, false),
     C3(2.00, true,  true,  false, false),
     D1(1.60, true,  true,  false, false),
-    F (0.00, false, true,  true,  false),
-    NG(0.00, false, true,  true,  false),
+    F (0.00, false, true,  true,  false), // counts as 0 in QCA 
+    NG(0.00, false, true,  true,  false), // counts as 0 in QCA
 
-    // ---- Table 2.1: pass/fail modules ----
+    // Pass/fail grades (Table 2.1)
     P (0.00, true,  false, false, false),
     N (0.00, false, false, true,  false),
 
-    // ---- Table 2.2: administrative grades ----
+    // Administrative grades (Table 2.2)
     EX(0.00, true,  false, false, true),
     R (0.00, false, false, false, true),
     G (0.00, false, false, false, true),
@@ -50,20 +53,9 @@ public enum Grade {
     Y (0.00, false, false, false, true),
     W (0.00, false, false, false, true);
 
-    /*
-     * NOTE:
-     * Table 4.1 (SP 3.2.2.5) lists an "S" grade among those not awarded for
-     * normal participation, and the document-control history mentions S2.
-     * The handbook does not define them, so their meaning and behaviour need
-     * confirmation from the lecturer before they are added to this enum.
-     */
-
-    /** Minimum mark (%) for C3. */
-    public static final double MIN_C3_PERCENT = 40.0;
-
-    /** Lower mark (%) for D1. */
-    public static final double MIN_D1_PERCENT = 35.0;
-
+    
+    // The fields are private so other classes can't access them directly
+    // (encapsulation), and final so they can't change once the grade is made.
     private final double qcaPoints;
     private final boolean creditsAwarded;
     private final boolean countsInQca;
@@ -81,99 +73,86 @@ public enum Grade {
         this.administrative = administrative;
     }
 
-    /** Returns the QPV of this grade. */
+    /**
+     * Gets the quality points for this grade.
+     *
+     * @return the points, from 0.00 to 4.00
+     */
     public double getQcaPoints() {
         return qcaPoints;
     }
-
-    /** Returns whether credits are awarded. */
+    
+    /**
+     * Checks if the module credits are given.
+     *
+     * @return true if credits are awarded
+     */
     public boolean isCreditsAwarded() {
         return creditsAwarded;
     }
-
-    /** Returns whether this grade contributes to QCA. */
+    
+    /**
+     * Checks if this grade is used in the QCA.
+     *
+     * @return true if it counts towards the QCA
+     */
     public boolean countsTowardsQca() {
         return countsInQca;
     }
-
-    /** Returns whether this is a deficient grade. */
+    
+    /**
+     * Checks if this is a deficient grade.
+     *
+     * @return true for F, NG, I, I2, M and N
+     */
     public boolean isDeficient() {
         return deficient;
     }
 
-    /** Returns whether this is an administrative grade. */
+    /**
+     * Checks if this grade is from the administrative table.
+     *
+     * @return true if it is an administrative grade
+     */
     public boolean isAdministrative() {
         return administrative;
     }
 
-    /** Returns true for quality-graded results A1 to NG. */
-    public boolean isQualityGraded() {
-        return countsInQca;
-    }
-
-    /**
-     * Returns true for an ordinary academic pass:
-     * C3 or better, or P in a pass/fail module.
-     *
-     * EX is not an ordinary pass; it is an exemption.
-     * D1 is a compensating fail, not an ordinary pass.
+    /** Pass = C3 or above, or P. D1 doesn't count as a pass. 
+     * 
+     * @return true if this grade is a pass. 
      */
     public boolean isPass() {
         return this == P ||
                (countsInQca && qcaPoints >= C3.qcaPoints);
     }
 
-    /**
-     * Returns true if the result is a pass or an exemption.
-     * EX is treated separately from an ordinary academic pass.
+    /** D1 is a compensating fail that carries credits.
+     * 
+     * @return true if this grade is D1.
      */
-    public boolean isPassOrExempt() {
-        return isPass() || this == EX;
-    }
-
-    /** D1 is a compensating fail that carries credits. */
     public boolean isCompensatingFail() {
         return this == D1;
     }
 
-    /**
-     * Fail with no credits:
-     * F and NG count towards QCA with zero points.
-     * N is excluded from QCA.
+    /** Fail with no credits. 
+     * 
+     * @return true if this grade is F, NG or N.
      */
     public boolean isFail() {
         return this == F || this == NG || this == N;
     }
 
-    /** Returns true for pass/fail module grades P or N. */
-    public boolean isPassFailGrade() {
-        return this == P || this == N;
-    }
-    // ---------- Repeat rules (SP 3.2.6) ----------
-
-    /**
-     * Applies the annual-repeat cap (SP 3.2.6.1): a quality grade better
-     * than C3 becomes C3. C3, D1, F, NG, P, N and administrative grades
-     * are returned unchanged.
-     *
-     * Link-in repeats (SP 3.2.6.2) are not capped, so do not call this
-     * for them.
-     *
-     * @return the grade after the C3 cap
+    /** Annual repeat: anything above C3 is capped at C3 ( not for link-in repeats).
+     * 
+     * @return C3 if this grade is higher, otherwise this grade.
      */
     public Grade capAtC3() {
         return (countsInQca && qcaPoints > C3.qcaPoints) ? C3 : this;
     }
 
-    /**
-     * Returns the higher of two attempts at the same module (SP 3.2.6).
-     * Quality grades are ranked by QPV. A quality grade ranks above a
-     * grade with no QPV (P, N, I, X ...), so an I grade awarded during a
-     * repeat leaves the original grade standing (SP 3.2.3.14).
-     * In a pass/fail module P ranks above N, so a pass on the repeat
-     * replaces an earlier N
-     * If both are equal in rank, the first is returned.
-     *
+    /** Repeat: Keeps the better of the two grades. Original wins a tie. 
+     * 
      * @param first the original grade
      * @param second the repeat grade
      * @return the grade that stands
@@ -185,11 +164,7 @@ public enum Grade {
         return second.standing() > first.standing() ? second : first;
     }
 
-    /** Ranking value: QPV for quality grades, -1 for grades with no QPV.
-     * Quality grades rank by QPV (0.00 to 4.00). P ranks just below them
-     * (-0.5) so that it beats N and the other grades with no QPV (-1.0).
-     */
-
+    /** Ranking for higherOf: points for graded results, P = -0.5, others = -1.0. */
     private double standing() {
         if (countsInQca) {
             return qcaPoints;
