@@ -87,7 +87,7 @@ class ResultsServiceTest {
         service.recordResult(ANN, "CS1", 2026, 1, Grade.A1);
         service.recordResult(ANN, "CS3", 2026, 1, Grade.B1);
 
-        assertEquals(2, service.getResults(ANN, 2026, 1).size());
+        assertEquals(2, repository.findByStudent(ANN, 2026, 1).size());
     }
 
     // ---------- Repeats ----------
@@ -144,34 +144,6 @@ class ResultsServiceTest {
                 () -> onlyAnn.recordResult(ANN, "CS1", 2026, 1, Grade.A1));
         assertThrows(IllegalArgumentException.class,
                 () -> onlyAnn.recordResult(BOB, "CS1", 2026, 1, Grade.A1));
-    }
-
-    @Test
-    void defaultConstructorTreatsNullRegistrationAsNotRegistered() {
-        // The students in this test have a null registration.
-        ResultsService defaultService = new ResultsService(
-                repository, students::get, modules::get);
-
-        String msg = messageOf(() -> defaultService.recordResult(
-                ANN, "CS1", 2026, 1, Grade.A1));
-
-        assertTrue(msg.contains("not registered"));
-    }
-
-    @Test
-    void defaultConstructorAcceptsStudentWithARegistration() {
-        Student carol = new Student("Carol", "103", "carol@ul.ie",
-                new Registration("103", "LM118", 2026, 1, "ACTIVE"));
-        students.put("103", carol);
-
-        ResultsService defaultService = new ResultsService(
-                repository, students::get, modules::get);
-
-        ModuleResult r = defaultService.recordResult(
-                "103", "CS1", 2026, 1, Grade.B1);
-
-        assertSame(carol, r.getStudent());
-        assertEquals(1, repository.findAll().size());
     }
 
     // ---------- Validation: module and semester ----------
@@ -372,34 +344,6 @@ class ResultsServiceTest {
                 () -> service.recordResult(ANN, "CS1", 2026, 1, Grade.EX));
     }
 
-    @Test
-    void defaultConstructorRejectsWithdrawnStudent() {
-        Student dan = new Student("Dan", "104", "dan@ul.ie",
-                new Registration("104", "LM118", 2026, 1, "WITHDRAWN"));
-        students.put("104", dan);
-
-        ResultsService defaultService = new ResultsService(
-                repository, students::get, modules::get);
-
-        String msg = messageOf(() -> defaultService.recordResult(
-                "104", "CS1", 2026, 1, Grade.A1));
-
-        assertTrue(msg.contains("not registered"));
-    }
-
-    @Test
-    void defaultConstructorAcceptsRepeatingStudent() {
-        Student eve = new Student("Eve", "105", "eve@ul.ie",
-                new Registration("105", "LM118", 2026, 2, "REPEATING"));
-        students.put("105", eve);
-
-        ResultsService defaultService = new ResultsService(
-                repository, students::get, modules::get);
-
-        assertDoesNotThrow(() -> defaultService.recordResult(
-                "105", "CS1", 2026, 1, Grade.B1));
-    }
-
     // ---------- Persistence ----------
 
     @Test
@@ -411,33 +355,6 @@ class ResultsServiceTest {
 
         assertEquals(1, reloaded.findAll().size());
         assertEquals(Grade.B3, reloaded.findAll().get(0).getGrade());
-    }
-
-    // ---------- Finding ----------
-
-    @Test
-    void getResultsFiltersByStudentYearAndSemester() {
-        service.recordResult(ANN, "CS1", 2026, 1, Grade.A1);
-        service.recordResult(ANN, "CS2", 2026, 2, Grade.B1);
-        service.recordResult(ANN, "CS3", 2027, 1, Grade.C3);
-        service.recordResult(BOB, "CS1", 2026, 1, Grade.F);
-
-        assertEquals(3, service.getResults(ANN).size());
-        assertEquals(1, service.getResults(BOB).size());
-
-        assertEquals(2, service.getResults(ANN, 2026).size());
-        assertEquals(1, service.getResults(ANN, 2027).size());
-
-        List<ModuleResult> sem2 = service.getResults(ANN, 2026, 2);
-        assertEquals(1, sem2.size());
-        assertEquals("CS2", sem2.get(0).getModule().getCode());
-    }
-
-    @Test
-    void getResultsForUnknownStudentIsEmpty() {
-        assertTrue(service.getResults("999").isEmpty());
-        assertTrue(service.getResults("999", 2026).isEmpty());
-        assertTrue(service.getResults("999", 2026, 1).isEmpty());
     }
 
     // ---------- Constructor validation ----------

@@ -16,43 +16,26 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 /**
- * Records and retrieves module results.
+ * Saves new module results and gets them back.
+ * Before saving, it checks the student is registered, the module exists,
+ * the semester is right, the result isn't a duplicate, and the module
+ * is allowed to be repeated. If a check fails it throws an
+ * IllegalArgumentException, so the menu can show the message.
  *
- * Before a result is saved, this service checks that:
- * - the student exists and is registered on a programme
- * - the module exists
- * - the semester matches the semester the module runs in
- * - the same student/module/year/semester has not already been recorded
- * - a new attempt at a module is only allowed if the grade that currently
- *   stands for it is one that can be repeated
+ * A module can only be taken again if the grade that stands has no
+ * credits, or is D1 (AR 1.3.4, AR 1.4.17).
  *
- * Invalid requests throw IllegalArgumentException with a clear message,
- * so a menu can catch it and show the message to the user.
- *
- * Repeat attempts: the same module can be recorded again in a later year,
- * but only when the standing grade carries no credits (F, NG, N, I, I2, M
- * and similar) or is D1, a compensating fail. A module that already has
- * credits cannot be selected again (AR 1.3.4), and annual repeats are
- * for F, NG, D1 and I grades (AR 1.4.17). Deciding which grade stands is
- * done in TranscriptService.
- *
- * Assumptions (to be listed in the project documentation):
- * - A repeat is recorded under a later academic year than the original,
- *   because the same student/module/year/semester cannot be recorded twice.
- *   (Annual repeats are really held in the summer of the same academic
- *   year, AR 1.4.16, so this is a simplification.)
- * - A module runs in one semester only, so the semester must match
- *   Module.getSemester().
- * - The grade is not checked against the module type (for example P or N
- *   in a quality-graded module), because Module has no pass/fail flag.
- * - A lecturer may only submit results for modules they teach
- *   (Module.getLecturerId()), using the overload that takes a lecturer ID.
- * - A lecturer cannot award the administrative grades G, EX, R, RE, W, X
- *   or Y (Table 4.1, SP 3.2.2.5). For example, EX is decided by the
- *   Student Status Committee (SP 3.4.8). Such grades can still appear in
- *   results.csv.
- *   The overload without a lecturer ID does neither of these two checks,
- *   for use by administrators and tests.
+ * Assumptions:
+ * - A repeat is saved under a later year, since the same year and
+ *   semester can't be saved twice (in reality repeats are in the summer,
+ *   AR 1.4.16).
+ * - Each module runs in one semester only.
+ * - The grade isn't checked against the module type, because Module
+ *   has no pass/fail flag.
+ * - Using the lecturer version, a lecturer can only give results for
+ *   their own modules, and can't give G, EX, R, RE, W, X or Y
+ *   (SP 3.2.2.5). The version without a lecturer ID skips these checks
+ *   (for admins and tests).
  */
 public class ResultsService {
 
@@ -67,6 +50,9 @@ public class ResultsService {
     private final Predicate<Student> isRegistered;
 
     /**
+     * Sets up the service with where results are stored and how to look 
+     * up students and modules.
+     * 
      * @param repository where results are stored
      * @param studentLookup finds a Student by ID (null if none)
      * @param moduleLookup finds a Module by code (null if none)
@@ -85,27 +71,16 @@ public class ResultsService {
         this.isRegistered = Objects.requireNonNull(isRegistered, "isRegistered predicate must not be null");
     }
 
-    /**
-     * Same as above, but treats a student as registered when they have a
-     * Registration whose status is not WITHDRAWN. ACTIVE and REPEATING
-     * students can receive results.
-     */
-    public ResultsService(
-            ResultRepository repository,
-            Function<String, Student> studentLookup,
-            Function<String, Module> moduleLookup) {
-
-        this(repository, studentLookup, moduleLookup,
-                s -> s.getRegistration() != null
-                        && !"WITHDRAWN".equals(
-                                s.getRegistration().getStatus()));
-    }
-
     // ---------- Recording ----------
 
     /**
-     * Validates and saves a result.
+     * Checks a result is valid and then saves it.
      *
+     * @param studentId the student's ID
+     * @param moduleCode the module code, e.g. CS4221
+     * @param year the starting year of the academic year, e.g. 2026
+     * @param semester the semester (1 or 2)
+     * @param grade the grade to record
      * @return the saved result
      * @throws IllegalArgumentException if any check fails
      */
@@ -180,14 +155,18 @@ public class ResultsService {
     }
 
     /**
-     * Same as the version without a lecturer ID, but first checks that
-     * the lecturer teaches the module.
+     * Same as the other recordResult, but first checks the lecturer
+     * teaches the module and isn't giving an admin grade.
      *
-     * @param lecturerId ID of the faculty member submitting the result
+     * @param lecturerId the ID of the lecturer giving the result
+     * @param studentId the student's ID
+     * @param moduleCode the module code, e.g. CS4221
+     * @param year the starting year of the academic year, e.g. 2026
+     * @param semester the semester (1 or 2)
+     * @param grade the grade to record
      * @return the saved result
-     * @throws IllegalArgumentException if the module is not taught by this
-     *         lecturer, if the grade is one a lecturer cannot award, or if
-     *         any other check fails
+     * @throws IllegalArgumentException if the lecturer doesn't teach the
+     *module, the grade is an admin grade, or any other check fails
      */
     public ModuleResult recordResult(String lecturerId, String studentId,
                                      String moduleCode, int year,
@@ -216,9 +195,12 @@ public class ResultsService {
     }
 
     /**
-     * Works out the grade that currently stands for earlier attempts at
-     * one module: later attempts are capped at C3 and the higher grade
-     * stands (SP 3.2.6). TranscriptService applies the same rule.
+     * Finds which grade stands after all attempts at one module.
+     * Repeats are capped at C3 and the better grade is kept (SP 3.2.6),
+     * the same rule as TranscriptService.
+     *
+     * @param attempts all earlier attempts at the module
+     * @return the grade that stands
      */
     private Grade standingGrade(List<ModuleResult> attempts) {
         List<ModuleResult> ordered = new ArrayList<>(attempts);
@@ -237,21 +219,13 @@ public class ResultsService {
 
     // ---------- Finding ----------
 
-    /** All results for one student (every attempt). */
+    /** Gets every result for a student, including repeats.
+     * 
+     * @param studentId the student's ID.
+     * @return all the student's results
+     */
     public List<ModuleResult> getResults(String studentId) {
         return repository.findByStudent(studentId);
-    }
-
-    /** One student's results for one academic year. */
-    public List<ModuleResult> getResults(String studentId, int year) {
-        return repository.findByStudent(studentId, year);
-    }
-
-    /** One student's results for one year and semester. */
-    public List<ModuleResult> getResults(
-            String studentId, int year, int semester) {
-
-        return repository.findByStudent(studentId, year, semester);
     }
 }
 
