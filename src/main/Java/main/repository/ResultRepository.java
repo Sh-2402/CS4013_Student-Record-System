@@ -14,32 +14,16 @@ import java.util.Objects;
 import java.util.function.Function;
 
 /**
- * Saves and loads module results in results.csv.
- *
- * File format (one result per line, after a header row):
- * studentId,moduleCode,year,semester,grade
- *
- * All reading and writing goes through CsvUtil, so this class never
- * touches the file directly (except to check it exists and to create the
- * folder). CsvUtil has no "append" method, so save() reads every row,
- * adds the new one and writes the whole file back. That is fine for the
- * size of file used in this project.
- *
- * A CSV line only holds IDs, but a ModuleResult needs real Student and
- * Module objects. So this class is given two lookup functions, one for
- * students and one for modules, and uses them to rebuild each result.
- *
- * Every attempt is stored, including repeats. Deciding which grade
- * stands is done later, in TranscriptService.
- *
- * Lines that cannot be read (wrong number of columns, unknown student or
- * module, bad grade, year or semester) are skipped with a warning on
- * System.err rather than stopping the whole load. They are kept in the
- * file when it is rewritten, so nothing is lost.
- *
- * Load order: results are rebuilt in the constructor, so the student and
- * module lookups must already be able to find every student and module.
- * Create the student and module repositories first (in Main), then this one.
+ * The only class that reads and writes results.csv.
+ * Each line is one result: studentId,moduleCode,year,semester,grade.
+ * When the program starts, every line is turned into a ModuleResult.
+ * A line only has IDs (like 101 and CS4221), so two lookup functions
+ * are used to turn those IDs into real Student and Module objects.
+ * A bad line (unknown student or module, wrong grade, missing column)
+ * is skipped with a warning, so one mistake doesn't crash the program.
+ * Saving adds the new result and writes the whole file again.
+ * Every attempt is stored, including repeats; TranscriptService decides
+ * which grade counts.
  */
 public class ResultRepository {
 
@@ -52,6 +36,8 @@ public class ResultRepository {
     private final List<ModuleResult> results = new ArrayList<>();
 
     /**
+     * Sets up the repository and loads all results from the file.
+     * 
      * @param file path to results.csv (for example data/results.csv)
      * @param studentLookup function to look up a Student by ID (returns null if not found)
      * @param moduleLookup function to look up a Module by code (returns null if not found)
@@ -201,12 +187,21 @@ public class ResultRepository {
 
     // ---------- Finding ----------
 
-    /** Returns every result in the file. */
+    /**
+     * Gets every result in the file.
+     *
+     * @return a copy of all results
+     */
     public List<ModuleResult> findAll() {
         return new ArrayList<>(results);
     }
 
-    /** Returns all results for one student. */
+    /**
+     * Gets all results for one student.
+     *
+     * @param studentId the student's ID
+     * @return the student's results, including repeats
+     */
     public List<ModuleResult> findByStudent(String studentId) {
         List<ModuleResult> found = new ArrayList<>();
 
@@ -218,7 +213,13 @@ public class ResultRepository {
         return found;
     }
 
-    /** Returns one student's results for one academic year. */
+    /**
+     * Gets one student's results for one academic year.
+     *
+     * @param studentId the student's ID
+     * @param year the starting year of the academic year, e.g. 2026
+     * @return the student's results for that year
+     */
     public List<ModuleResult> findByStudent(String studentId, int year) {
         List<ModuleResult> found = new ArrayList<>();
 
@@ -230,7 +231,14 @@ public class ResultRepository {
         return found;
     }
 
-    /** Returns one student's results for one year and semester. */
+    /**
+     * Gets one student's results for one year and semester.
+     *
+     * @param studentId the student's ID
+     * @param year the starting year of the academic year, e.g. 2026
+     * @param semester the semester (1 or 2)
+     * @return the student's results for that semester
+     */
     public List<ModuleResult> findByStudent(
             String studentId, int year, int semester) {
 
