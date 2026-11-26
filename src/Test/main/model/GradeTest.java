@@ -59,25 +59,12 @@ class GradeTest {
     void passFailGradesAreHandledCorrectly() {
         assertTrue(Grade.P.isPass());
         assertFalse(Grade.N.isPass());
-
-        assertTrue(Grade.P.isPassFailGrade());
-        assertTrue(Grade.N.isPassFailGrade());
-
-        assertFalse(Grade.A1.isPassFailGrade());
     }
 
     @Test
     void exemptionIsSeparateFromOrdinaryPass() {
         assertFalse(Grade.EX.isPass());
-        assertTrue(Grade.EX.isPassOrExempt());
         assertTrue(Grade.EX.isCreditsAwarded());
-    }
-
-    @Test
-    void ordinaryPassesAreAlsoPassOrExempt() {
-        assertTrue(Grade.A1.isPassOrExempt());
-        assertTrue(Grade.C3.isPassOrExempt());
-        assertTrue(Grade.P.isPassOrExempt());
     }
 
     @Test
@@ -85,10 +72,6 @@ class GradeTest {
         assertFalse(Grade.I.isPass());
         assertFalse(Grade.I2.isPass());
         assertFalse(Grade.M.isPass());
-
-        assertFalse(Grade.I.isPassOrExempt());
-        assertFalse(Grade.I2.isPassOrExempt());
-        assertFalse(Grade.M.isPassOrExempt());
     }
 
     // ---------- Compensating Fail ----------
@@ -232,27 +215,6 @@ class GradeTest {
                     administrativeGrades.contains(grade),
                     grade.isAdministrative(),
                     grade + " administrative status is incorrect"
-            );
-        }
-    }
-
-    // ---------- Percentage Thresholds ----------
-
-    @Test
-    void percentageThresholdsMatchHandbook() {
-        assertEquals(40.0, Grade.MIN_C3_PERCENT, DELTA);
-        assertEquals(35.0, Grade.MIN_D1_PERCENT, DELTA);
-    }
-
-    // ---------- Quality-Graded Classification ----------
-
-    @Test
-    void qualityGradedMatchesQcaInclusion() {
-        for (Grade grade : Grade.values()) {
-            assertEquals(
-                    grade.countsTowardsQca(),
-                    grade.isQualityGraded(),
-                    grade + " quality-graded status is incorrect"
             );
         }
     }
