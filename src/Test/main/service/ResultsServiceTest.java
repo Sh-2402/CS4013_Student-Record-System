@@ -5,13 +5,11 @@ import static org.junit.jupiter.api.Assertions.*;
 import main.model.Grade;
 import main.model.Module;
 import main.model.ModuleResult;
-import main.model.Registration;
 import main.model.Student;
 import main.repository.ResultRepository;
 
 import java.nio.file.Path;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.BeforeEach;
