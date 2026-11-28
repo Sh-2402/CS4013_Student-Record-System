@@ -96,9 +96,13 @@ public class ProgressionService {
 
     /**
      * Returns every registered student who does not meet the minimum
-     * standard. Students who are not registered on a programme, or who have
-     * withdrawn, are skipped, because there is no programme rule to check
-     * them against.
+     * standard. These students are skipped:
+     * <ul>
+     *   <li>students not registered on a programme, or who have withdrawn,
+     *       because there is no programme rule to check them against</li>
+     *   <li>students with no results recorded yet (for example, first years
+     *       before their first exams), because there is nothing to review</li>
+     * </ul>
      *
      * @return students whose status is DOES_NOT_PROGRESS
      */
@@ -111,7 +115,8 @@ public class ProgressionService {
 
             if (registration == null
                     || WITHDRAWN.equals(registration.getStatus())
-                    || findProgrammeOf(student.getId()) == null) {
+                    || findProgrammeOf(student.getId()) == null
+                    || transcriptService.getStandingResults(student.getId()).isEmpty()) {
                 continue;
             }
 
