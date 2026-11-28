@@ -1,3 +1,4 @@
+
 package main.repository;
 
 import java.util.ArrayList;
@@ -38,10 +39,10 @@ public class RegistrationRepository {
             Registration reg = new Registration(r[0], r[1], Integer.parseInt(r[2]), Integer.parseInt(r[3]), r[4]);
             registrations.add(reg);
         }
+
         return registrations;
     }
 
-<<<<<<< HEAD
     public Registration findByStudent(String studentId) {
         List<Registration> registrations = loadAll();
         for (Registration reg : registrations) {
@@ -93,82 +94,4 @@ public class RegistrationRepository {
         CsvUtil.writeAll(filePath, rows);
     }
 
-=======
-    /**
-     * Adds a new registration to the file.
-     *
-     * @param r the registration to add
-     */
-    public void save(Registration r) {
-        List<Registration> registrations = loadAll();
-        registrations.add(r);
-        writeAll(registrations);
-    }
-
-    /**
-     * Replaces the saved registration for the same student, for example
-     * after advanceYear() or changeStatus().
-     *
-     * @param r the changed registration
-     * @throws IllegalArgumentException if the student has no saved registration
-     */
-    public void update(Registration r) {
-        List<Registration> registrations = loadAll();
-
-        for (int i = 0; i < registrations.size(); i++) {
-            if (registrations.get(i).getStudentId().equals(r.getStudentId())) {
-                registrations.set(i, r);
-                writeAll(registrations);
-                return;
-            }
-        }
-        throw new IllegalArgumentException(
-                "No registration found for student " + r.getStudentId());
-    }
-
-    /**
-     * Finds a student's registration.
-     *
-     * @param id the student ID
-     * @return the registration, or null if the student is not registered
-     */
-    public Registration findByStudent(String id) {
-        for (Registration r : loadAll()) {
-            if (r.getStudentId().equals(id)) {
-                return r;
-            }
-        }
-        return null;
-    }
-
-    /**
-     * Finds every registration on a programme.
-     *
-     * @param code the programme code
-     * @return the registrations on that programme (empty if none)
-     */
-    public List<Registration> findByProgramme(String code) {
-        List<Registration> onProgramme = new ArrayList<>();
-
-        for (Registration r : loadAll()) {
-            if (r.getProgrammeCode().equals(code)) {
-                onProgramme.add(r);
-            }
-        }
-        return onProgramme;
-    }
-
-    /** Writes the header and all registrations back to the file. */
-    private void writeAll(List<Registration> registrations) {
-        List<String[]> rows = new ArrayList<>();
-        rows.add(HEADER);
-
-        for (Registration r : registrations) {
-            rows.add(new String[]{r.getStudentId(), r.getProgrammeCode(),
-                    String.valueOf(r.getStartYear()), String.valueOf(r.getCurrentYear()),
-                    r.getStatus()});
-        }
-        CsvUtil.writeAll(filePath, rows);
-    }
->>>>>>> e68ca3bc0861b094fc5669141b2d1d7e2c9d44c4
 }
