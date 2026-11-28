@@ -26,6 +26,8 @@ public class FacultyMenu {
     private final String facultyId;
 
     /**
+     * Sets up the menu for the faculty member who just logged in.
+     * 
      * @param input shared input helper (one for the whole program)
      * @param resultsService used to record results
      * @param transcriptService used to look up transcripts
@@ -67,7 +69,7 @@ public class FacultyMenu {
             }
         }
     }
-
+    // Asks for the results details and saves it, or shows the error if something is wrong.
     private void submitResult() {
         String studentId = input.readText("Student ID: ").trim();
         String moduleCode = input.readText("Module code: ").trim();
@@ -102,7 +104,7 @@ public class FacultyMenu {
             return null;
         }
     }
-
+    // Prints any student's transcript ( lecturers aren't limited to one student)
     private void lookUpTranscript() {
         String studentId = input.readText("Student ID: ").trim();
 

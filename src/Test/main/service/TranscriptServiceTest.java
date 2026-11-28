@@ -280,4 +280,18 @@ class TranscriptServiceTest {
         assertThrows(IllegalArgumentException.class,
                 () -> service.buildTranscript("999"));
     }
+
+    @Test 
+    void transcriptShowsYearQcaForEachYear(){
+        add("CS1", 2026, 1, Grade.A1);
+        add("CS3", 2026, 2, Grade.C3);
+        add("CS2", 2027, 1, Grade.F);
+
+        String t = service.buildTranscript(ID);
+
+        assertTrue(t.contains("Year QCA: 3.00"));
+        assertTrue(t.contains("Year QCA: 0.00"));
+        assertTrue(t.indexOf("Year QCA: 3.00") < t.indexOf("2027/28"));
+        assertTrue(t.contains("Overall QCA: 2.00"));
+    }
 }

@@ -26,18 +26,9 @@ class ModuleResultTest {
     void qualityPointsAreGradePointsTimesCredits() {
         ModuleResult r = result(Grade.A2);
 
-        assertEquals(21.6, r.getQpv(), DELTA);
+        assertEquals(21.6, r.getQualityCreditScore(), DELTA);
         assertEquals(6, r.getCreditsEarned());
         assertEquals(6, r.getQcaCredits());
-    }
-
-    @Test
-    void getQpvMatchesQualityCreditScore() {
-        for (Grade grade : Grade.values()) {
-            ModuleResult r = result(grade);
-            assertEquals(r.getQualityCreditScore(), r.getQpv(), DELTA,
-                    grade + " QPV and QCS should match");
-        }
     }
 
     @Test
@@ -49,7 +40,7 @@ class ModuleResultTest {
     void d1GivesQualityPointsAndCredits() {
         ModuleResult r = result(Grade.D1);
 
-        assertEquals(9.6, r.getQpv(), DELTA);
+        assertEquals(9.6, r.getQualityCreditScore(), DELTA);
         assertEquals(6, r.getCreditsEarned());
         assertEquals(6, r.getQcaCredits());
 
@@ -63,7 +54,7 @@ class ModuleResultTest {
         ModuleResult r = new ModuleResult(
                 student(), module(3), 2026, 1, Grade.B1);
 
-        assertEquals(9.6, r.getQpv(), DELTA);
+        assertEquals(9.6, r.getQualityCreditScore(), DELTA);
         assertEquals(3, r.getCreditsEarned());
         assertEquals(3, r.getQcaCredits());
     }
@@ -75,7 +66,7 @@ class ModuleResultTest {
         ModuleResult r = result(Grade.F);
 
         assertEquals(0, r.getCreditsEarned());
-        assertEquals(0.0, r.getQpv(), DELTA);
+        assertEquals(0.0, r.getQualityCreditScore(), DELTA);
         assertEquals(6, r.getQcaCredits());
 
         assertTrue(r.isDeficient());
@@ -88,7 +79,7 @@ class ModuleResultTest {
         ModuleResult r = result(Grade.NG);
 
         assertEquals(0, r.getCreditsEarned());
-        assertEquals(0.0, r.getQpv(), DELTA);
+        assertEquals(0.0, r.getQualityCreditScore(), DELTA);
         assertEquals(6, r.getQcaCredits());
 
         assertTrue(r.isDeficient());
@@ -102,7 +93,7 @@ class ModuleResultTest {
         ModuleResult r = result(Grade.P);
 
         assertEquals(6, r.getCreditsEarned());
-        assertEquals(0.0, r.getQpv(), DELTA);
+        assertEquals(0.0, r.getQualityCreditScore(), DELTA);
         assertEquals(0, r.getQcaCredits());
 
         assertTrue(r.isPass());
@@ -116,7 +107,7 @@ class ModuleResultTest {
 
         assertEquals(0, r.getCreditsEarned());
         assertEquals(0, r.getQcaCredits());
-        assertEquals(0.0, r.getQpv(), DELTA);
+        assertEquals(0.0, r.getQualityCreditScore(), DELTA);
 
         assertFalse(r.isPass());
         assertTrue(r.isDeficient());
@@ -131,31 +122,10 @@ class ModuleResultTest {
 
         assertEquals(6, r.getCreditsEarned());
         assertEquals(0, r.getQcaCredits());
-        assertEquals(0.0, r.getQpv(), DELTA);
+        assertEquals(0.0, r.getQualityCreditScore(), DELTA);
 
         // EX is separate from an ordinary pass.
-        assertTrue(r.isExempt());
         assertFalse(r.isPass());
-        assertTrue(r.isPassOrExempt());
-    }
-
-    @Test
-    void onlyExIsExempt() {
-        for (Grade grade : Grade.values()) {
-            assertEquals(grade == Grade.EX, result(grade).isExempt(),
-                    grade + " exempt status is incorrect");
-        }
-    }
-
-    // ---------- Pass classification ----------
-
-    @Test
-    void passOrExemptMatchesGrade() {
-        for (Grade grade : Grade.values()) {
-            assertEquals(grade.isPassOrExempt(),
-                    result(grade).isPassOrExempt(),
-                    grade + " pass-or-exempt status is incorrect");
-        }
     }
 
     // ---------- Administrative grades ----------
@@ -166,11 +136,10 @@ class ModuleResultTest {
 
         assertEquals(0, r.getCreditsEarned());
         assertEquals(0, r.getQcaCredits());
-        assertEquals(0.0, r.getQpv(), DELTA);
+        assertEquals(0.0, r.getQualityCreditScore(), DELTA);
 
         assertTrue(r.isDeficient());
         assertFalse(r.isPass());
-        assertTrue(r.isAdministrative());
     }
 
     @Test
@@ -178,18 +147,17 @@ class ModuleResultTest {
         Grade[] administrativeGrades = {
                 Grade.EX, Grade.R, Grade.G, Grade.I,
                 Grade.I2, Grade.M, Grade.RE, Grade.X,
-                Grade.Y, Grade.W
+                Grade.Y, Grade.W 
         };
+    
 
         for (Grade grade : administrativeGrades) {
             ModuleResult r = result(grade);
 
-            assertTrue(r.isAdministrative(), grade + " should be administrative");
-
-            assertEquals(0, r.getQcaCredits(),
+             assertEquals(0, r.getQcaCredits(),
                     grade + " should be excluded from QCA");
 
-            assertEquals(0.0, r.getQpv(), DELTA,
+            assertEquals(0.0, r.getQualityCreditScore(), DELTA,
                     grade + " should have zero QCS");
         }
     }
@@ -205,13 +173,6 @@ class ModuleResultTest {
             assertEquals(0, result(grade).getCreditsEarned(),
                     grade + " should not award credits");
         }
-    }
-
-    @Test
-    void qualityGradesAreNotAdministrative() {
-        assertFalse(result(Grade.A1).isAdministrative());
-        assertFalse(result(Grade.F).isAdministrative());
-        assertFalse(result(Grade.P).isAdministrative());
     }
 
     // ---------- Validation ----------

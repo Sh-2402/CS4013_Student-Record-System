@@ -21,6 +21,8 @@ public class StudentMenu {
     private final String studentId;
 
     /**
+     * Sets up the menu for the student who just logged in.
+     * 
      * @param input shared input helper (use one InputHelper for the whole
      *              program, because each one opens its own Scanner)
      * @param transcriptService source of transcripts and QCA values
@@ -62,7 +64,7 @@ public class StudentMenu {
             }
         }
     }
-
+    // Prints the student's full transcript 
     private void showTranscript() {
         try {
             System.out.println();
@@ -71,13 +73,12 @@ public class StudentMenu {
             System.out.println("Error: " + e.getMessage());
         }
     }
-
+    // Asks for a year and semester, then prints the QCA for it
     private void showSemesterQca() {
         int year = input.readInt("Academic year start (e.g. 2026): ");
         int semester = input.readInt("Semester (1 or 2): ");
 
         try {
-            // Called first so that a bad semester gives the usual error.
             double qca = transcriptService.semesterQca(
                     studentId, year, semester);
 
@@ -93,7 +94,7 @@ public class StudentMenu {
             System.out.println("Error: " + e.getMessage());
         }
     }
-
+    // Prints the overall QCA, or a message if there are no results yet.
     private void showOverallQca() {
         if (transcriptService.getStandingResults(studentId).isEmpty()) {
             System.out.println("No results recorded.");
