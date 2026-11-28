@@ -5,13 +5,11 @@ import static org.junit.jupiter.api.Assertions.*;
 import main.model.Grade;
 import main.model.Module;
 import main.model.ModuleResult;
-import main.model.Registration;
 import main.model.Student;
 import main.repository.ResultRepository;
 
 import java.nio.file.Path;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -39,6 +37,7 @@ class ResultsServiceTest {
 
         modules.put("CS1", new Module("CS1", "First Module", 6, 1, "L1"));
         modules.put("CS2", new Module("CS2", "Second Module", 6, 2, "L1"));
+        modules.put("CS3", new Module("CS3", "Third Module", 6, 1, "L1"));
 
         repository = new ResultRepository(
                 tempDir.resolve("results.csv"), students::get, modules::get);
@@ -86,7 +85,7 @@ class ResultsServiceTest {
         service.recordResult(ANN, "CS1", 2026, 1, Grade.A1);
         service.recordResult(ANN, "CS3", 2026, 1, Grade.B1);
 
-        assertEquals(2, service.getResults(ANN, 2026, 1).size());
+        assertEquals(2, repository.findByStudent(ANN, 2026, 1).size());
     }
 
     // ---------- Repeats ----------
@@ -143,34 +142,6 @@ class ResultsServiceTest {
                 () -> onlyAnn.recordResult(ANN, "CS1", 2026, 1, Grade.A1));
         assertThrows(IllegalArgumentException.class,
                 () -> onlyAnn.recordResult(BOB, "CS1", 2026, 1, Grade.A1));
-    }
-
-    @Test
-    void defaultConstructorTreatsNullRegistrationAsNotRegistered() {
-        // The students in this test have a null registration.
-        ResultsService defaultService = new ResultsService(
-                repository, students::get, modules::get);
-
-        String msg = messageOf(() -> defaultService.recordResult(
-                ANN, "CS1", 2026, 1, Grade.A1));
-
-        assertTrue(msg.contains("not registered"));
-    }
-
-    @Test
-    void defaultConstructorAcceptsStudentWithARegistration() {
-        Student carol = new Student("Carol", "103", "carol@ul.ie",
-                new Registration("103", "LM118", 2026, 1, "ACTIVE"));
-        students.put("103", carol);
-
-        ResultsService defaultService = new ResultsService(
-                repository, students::get, modules::get);
-
-        ModuleResult r = defaultService.recordResult(
-                "103", "CS1", 2026, 1, Grade.B1);
-
-        assertSame(carol, r.getStudent());
-        assertEquals(1, repository.findAll().size());
     }
 
     // ---------- Validation: module and semester ----------
@@ -275,6 +246,102 @@ class ResultsServiceTest {
         assertTrue(msg.contains("already recorded"));
     }
 
+    // ---------- Repeat rules (credits already held) ----------
+
+    @Test
+    void moduleWithCreditsCannotBeAttemptedAgain() {
+        service.recordResult(ANN, "CS1", 2026, 1, Grade.C3);
+
+        String msg = messageOf(
+                () -> service.recordResult(ANN, "CS1", 2027, 1, Grade.A1));
+
+        assertTrue(msg.contains("already has credits for CS1"));
+        assertEquals(1, repository.findAll().size());
+    }
+
+    @Test
+    void passedPassFailModuleCannotBeAttemptedAgain() {
+        service.recordResult(ANN, "CS1", 2026, 1, Grade.P);
+
+        assertThrows(IllegalArgumentException.class,
+                () -> service.recordResult(ANN, "CS1", 2027, 1, Grade.P));
+    }
+
+    @Test
+    void failedModuleCanBeRepeated() {
+        service.recordResult(ANN, "CS1", 2026, 1, Grade.F);
+
+        assertDoesNotThrow(
+                () -> service.recordResult(ANN, "CS1", 2027, 1, Grade.C3));
+    }
+
+    @Test
+    void incompleteAndNotGradedModulesCanBeRepeated() {
+        modules.put("CS3", new Module("CS3", "Third Module", 6, 1, "L1"));
+        service.recordResult(ANN, "CS1", 2026, 1, Grade.NG);
+        service.recordResult(ANN, "CS3", 2026, 1, Grade.I);
+
+        assertDoesNotThrow(
+                () -> service.recordResult(ANN, "CS1", 2027, 1, Grade.C3));
+        assertDoesNotThrow(
+                () -> service.recordResult(ANN, "CS3", 2027, 1, Grade.C3));
+    }
+
+    @Test
+    void d1CarriesCreditsButCanStillBeRepeated() {
+        service.recordResult(ANN, "CS1", 2026, 1, Grade.D1);
+
+        assertDoesNotThrow(
+                () -> service.recordResult(ANN, "CS1", 2027, 1, Grade.C3));
+    }
+
+    @Test
+    void repeatIsBlockedOnceTheStandingGradeHasCredits() {
+        service.recordResult(ANN, "CS1", 2026, 1, Grade.F);
+        service.recordResult(ANN, "CS1", 2027, 1, Grade.C3);
+
+        String msg = messageOf(
+                () -> service.recordResult(ANN, "CS1", 2028, 1, Grade.C3));
+
+        assertTrue(msg.contains("grade C3"));
+    }
+
+    @Test
+    void repeatRuleAppliesPerStudent() {
+        service.recordResult(ANN, "CS1", 2026, 1, Grade.A1);
+
+        assertDoesNotThrow(
+                () -> service.recordResult(BOB, "CS1", 2027, 1, Grade.C3));
+    }
+
+    // ---------- Administrative grades and withdrawn students ----------
+
+    @Test
+    void lecturerCannotAwardAdministrativeGrades() {
+        Grade[] notAwarded = {Grade.G, Grade.EX, Grade.R, Grade.RE,
+                Grade.W, Grade.X, Grade.Y};
+
+        for (Grade g : notAwarded) {
+            String msg = messageOf(() -> service.recordResult(
+                    "L1", ANN, "CS1", 2026, 1, g));
+            assertTrue(msg.contains("cannot be awarded by a lecturer"),
+                    g + " should be refused");
+        }
+        assertTrue(repository.findAll().isEmpty());
+    }
+
+    @Test
+    void lecturerCanAwardOtherGradesIncludingIncomplete() {
+        assertDoesNotThrow(() -> service.recordResult(
+                "L1", ANN, "CS1", 2026, 1, Grade.I));
+    }
+
+    @Test
+    void methodWithoutLecturerIdMayRecordAdministrativeGrades() {
+        assertDoesNotThrow(
+                () -> service.recordResult(ANN, "CS1", 2026, 1, Grade.EX));
+    }
+
     // ---------- Persistence ----------
 
     @Test
@@ -286,33 +353,6 @@ class ResultsServiceTest {
 
         assertEquals(1, reloaded.findAll().size());
         assertEquals(Grade.B3, reloaded.findAll().get(0).getGrade());
-    }
-
-    // ---------- Finding ----------
-
-    @Test
-    void getResultsFiltersByStudentYearAndSemester() {
-        service.recordResult(ANN, "CS1", 2026, 1, Grade.A1);
-        service.recordResult(ANN, "CS2", 2026, 2, Grade.B1);
-        service.recordResult(ANN, "CS1", 2027, 1, Grade.C3);
-        service.recordResult(BOB, "CS1", 2026, 1, Grade.F);
-
-        assertEquals(3, service.getResults(ANN).size());
-        assertEquals(1, service.getResults(BOB).size());
-
-        assertEquals(2, service.getResults(ANN, 2026).size());
-        assertEquals(1, service.getResults(ANN, 2027).size());
-
-        List<ModuleResult> sem2 = service.getResults(ANN, 2026, 2);
-        assertEquals(1, sem2.size());
-        assertEquals("CS2", sem2.get(0).getModule().getCode());
-    }
-
-    @Test
-    void getResultsForUnknownStudentIsEmpty() {
-        assertTrue(service.getResults("999").isEmpty());
-        assertTrue(service.getResults("999", 2026).isEmpty());
-        assertTrue(service.getResults("999", 2026, 1).isEmpty());
     }
 
     // ---------- Constructor validation ----------

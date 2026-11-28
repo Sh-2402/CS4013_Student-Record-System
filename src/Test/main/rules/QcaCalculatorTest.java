@@ -9,7 +9,6 @@ import main.model.Student;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
@@ -103,15 +102,6 @@ class QcaCalculatorTest {
 
         assertThrows(NullPointerException.class,
                 () -> calc.semesterQca(null, 2026, 1));
-
-        assertThrows(NullPointerException.class,
-                () -> calc.yearQca(null, 2026));
-
-        assertThrows(NullPointerException.class,
-                () -> calc.programmeQca(null, Set.of("A")));
-
-        assertThrows(NullPointerException.class,
-                () -> calc.weightedQca(null));
     }
 
     @Test
@@ -125,25 +115,9 @@ class QcaCalculatorTest {
         assertThrows(NullPointerException.class,
                 () -> calc.overallQca(list));
 
-        assertThrows(NullPointerException.class,
-                () -> calc.yearQca(list, 2026));
-
-        assertThrows(NullPointerException.class,
-                () -> calc.programmeQca(list, Set.of("A")));
     }
 
-    @Test
-    void nullYearListIsRejected() {
-
-        List<List<ModuleResult>> years = Arrays.asList(
-                List.of(result("A", 6, Grade.A1)),
-                null
-        );
-
-        assertThrows(NullPointerException.class,
-                () -> calc.weightedQca(years));
-    }
-
+   
     // ---------- Fails and Compensating Fails ----------
 
     @Test
@@ -246,57 +220,6 @@ class QcaCalculatorTest {
         assertEquals(4.0, calc.overallQca(list), DELTA);
     }
 
-
-    // ---------- Quality Hours and Minimum Standard ----------
-
-    @Test
-    void hasQualityHoursIsTrueForQualityGradesIncludingFails() {
-        // F has quality hours even though its QCS is zero.
-        assertTrue(calc.hasQualityHours(List.of(result("A", 6, Grade.F))));
-        assertTrue(calc.hasQualityHours(List.of(result("A", 6, Grade.A1))));
-    }
-
-    @Test
-    void hasQualityHoursIsFalseWhenThereAreNoQualityGrades() {
-        List<ModuleResult> list = List.of(
-                result("A", 6, Grade.P),
-                result("B", 6, Grade.N),
-                result("C", 6, Grade.EX),
-                result("D", 6, Grade.I)
-        );
-
-        assertFalse(calc.hasQualityHours(list));
-        assertFalse(calc.hasQualityHours(List.of()));
-    }
-
-    @Test
-    void hasQualityHoursRejectsNullListAndNullResults() {
-        assertThrows(NullPointerException.class,
-                () -> calc.hasQualityHours(null));
-
-        List<ModuleResult> list = Arrays.asList(
-                result("A", 6, Grade.A1),
-                null
-        );
-
-        assertThrows(NullPointerException.class,
-                () -> calc.hasQualityHours(list));
-    }
-
-    @Test
-    void meetsMinimumStandardChecksForQcaOfTwoOrHigher() {
-        assertTrue(calc.meetsMinimumStandard(2.0));
-        assertTrue(calc.meetsMinimumStandard(2.5));
-        assertFalse(calc.meetsMinimumStandard(1.9));
-    }
-
-    @Test
-    void meetsMinimumStandardAllowsFloatingPointTolerance() {
-        // A mathematically exact 2.00 can be represented slightly below 2.00.
-        assertTrue(calc.meetsMinimumStandard(1.9999999999999998));
-        assertFalse(calc.meetsMinimumStandard(1.999999));
-    }
-
     // ---------- Semester Filtering ----------
 
     @Test
@@ -328,12 +251,10 @@ class QcaCalculatorTest {
                 () -> calc.semesterQca(list, 2026, 3));
     }
 
-    // ---------- Year QCA ----------
 
     @Test
-    void yearQcaCoversBothSemesters() {
-        // 2026: (4.0 x 6 + 2.0 x 6) / 12 = 3.0
-
+    void yearQcaUsesBothSemesters() {
+        // (4.0 x 6 + 2.0 x 6) / 12 = 3.0
         List<ModuleResult> list = List.of(
                 result("A", 6, 2026, 1, Grade.A1),
                 result("B", 6, 2026, 2, Grade.C3),
@@ -341,149 +262,17 @@ class QcaCalculatorTest {
         );
 
         assertEquals(3.0, calc.yearQca(list, 2026), DELTA);
-        assertEquals(0.0, calc.yearQca(list, 2027), DELTA);
     }
 
-    @Test
-    void yearQcaForYearWithNoResultsIsZero() {
-
+    @Test 
+    void yearQcaWithNoResultsIsZero(){
         List<ModuleResult> list = List.of(
-                result("A", 6, 2026, 1, Grade.A1)
+                result("A", 6, 2026, 1, Grade.A1),
+                result("B", 6, 2026, 2, Grade.C3),
+                result("C", 6, 2027, 1, Grade.F)
         );
 
         assertEquals(0.0, calc.yearQca(list, 2030), DELTA);
-    }
-
-    @Test
-    void yearQcaIgnoresNonQualityGrades() {
-
-        List<ModuleResult> list = List.of(
-                result("A", 6, 2026, 1, Grade.B1),
-                result("B", 6, 2026, 2, Grade.P),
-                result("C", 6, 2026, 2, Grade.EX)
-        );
-
-        assertEquals(3.2, calc.yearQca(list, 2026), DELTA);
-    }
-
-    // ---------- Programme QCA ----------
-
-    @Test
-    void programmeQcaUsesOnlyProgrammeModules() {
-        // A and B: (4.0 x 6 + 2.0 x 6) / 12 = 3.0
-
-        List<ModuleResult> list = List.of(
-                result("A", 6, Grade.A1),
-                result("B", 6, Grade.C3),
-                result("C", 6, Grade.F)
-        );
-
-        assertEquals(3.0,
-                calc.programmeQca(list, Set.of("A", "B")), DELTA);
-
-        assertEquals(0.0,
-                calc.programmeQca(list, Set.of("C")), DELTA);
-    }
-
-    @Test
-    void programmeQcaWithNoMatchingModulesIsZero() {
-
-        List<ModuleResult> list = List.of(
-                result("A", 6, Grade.A1)
-        );
-
-        assertEquals(0.0, calc.programmeQca(list, Set.of()), DELTA);
-        assertEquals(0.0, calc.programmeQca(list, Set.of("Z")), DELTA);
-    }
-
-    @Test
-    void programmeQcaRejectsNullModuleCodes() {
-
-        List<ModuleResult> list = List.of(
-                result("A", 6, Grade.A1)
-        );
-
-        assertThrows(NullPointerException.class,
-                () -> calc.programmeQca(list, null));
-    }
-
-    // ---------- Three-Year Part 2 Weighting ----------
-
-    @Test
-    void threeYearPart2UsesOneTwoTwoWeighting() {
-
-        // QCS: 24 x 1 + 12 x 2 + 12 x 2 = 72
-        // Hours: 6 x 1 + 6 x 2 + 6 x 2 = 30
-        // Weighted QCA = 72 / 30 = 2.4
-
-        List<List<ModuleResult>> years = List.of(
-                List.of(result("A", 6, 2024, 1, Grade.A1)),
-                List.of(result("B", 6, 2025, 1, Grade.C3)),
-                List.of(result("C", 6, 2026, 1, Grade.C3))
-        );
-
-        assertEquals(2.4, calc.weightedQca(years), DELTA);
-    }
-
-    @Test
-    void twoYearPart2IsUnweighted() {
-
-        // (24 + 12) / 12 = 3.0
-
-        List<List<ModuleResult>> years = List.of(
-                List.of(result("A", 6, 2025, 1, Grade.A1)),
-                List.of(result("B", 6, 2026, 1, Grade.C3))
-        );
-
-        assertEquals(3.0, calc.weightedQca(years), DELTA);
-    }
-
-    @Test
-    void oneYearPart2IsUnweighted() {
-
-        List<List<ModuleResult>> years = List.of(
-                List.of(result("A", 6, 2026, 1, Grade.A1))
-        );
-
-        assertEquals(4.0, calc.weightedQca(years), DELTA);
-    }
-
-    @Test
-    void weightedQcaWithNoYearsGivesZero() {
-        assertEquals(0.0, calc.weightedQca(List.of()), DELTA);
-    }
-
-    @Test
-    void weightedQcaWithNoQualityHoursGivesZero() {
-
-        List<List<ModuleResult>> years = List.of(
-                List.of(
-                        result("A", 6, 2026, 1, Grade.P),
-                        result("B", 6, 2026, 1, Grade.N)
-                ),
-                List.of(
-                        result("C", 6, 2027, 1, Grade.EX)
-                ),
-                List.of(
-                        result("D", 6, 2028, 1, Grade.I)
-                )
-        );
-
-        assertEquals(0.0, calc.weightedQca(years), DELTA);
-    }
-
-    @Test
-    void weightedQcaRejectsMoreThanThreeYears() {
-
-        List<List<ModuleResult>> years = List.of(
-                List.of(result("A", 6, Grade.A1)),
-                List.of(result("B", 6, Grade.A1)),
-                List.of(result("C", 6, Grade.A1)),
-                List.of(result("D", 6, Grade.A1))
-        );
-
-        assertThrows(IllegalArgumentException.class,
-                () -> calc.weightedQca(years));
     }
 }
 

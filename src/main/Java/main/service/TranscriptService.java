@@ -16,35 +16,32 @@ import java.util.TreeMap;
 import java.util.function.Function;
 
 /**
- * Works out QCA values and builds transcripts for a student.
- *
- * results.csv holds every attempt at every module, including repeats.
- * QcaCalculator expects only the grade that stands for each module, so
- * this service first works that out (SP 3.2.6):
- *
- * - The first attempt is the original.
- * - Every later attempt is treated as an annual repeat, so its grade is
- *   capped at C3 (Grade.capAtC3).
- * - The higher of the original and the capped repeat stands
- *   (Grade.higherOf). An I grade during a repeat leaves the original.
+ * Works out a student's QCA and builds their transcript.
+ * results.csv keeps every attempt, but QcaCalculator only wants the grade
+ * that counts for each module, so this class sorts out repeats first
+ * (SP 3.2.6): repeats are capped at C3 and the better grade is kept.
  *
  * Assumptions:
- * - Link-in repeats (SP 3.2.6.2) and repeats of a full semester or year
- *   (Table 4.1, "No cap" participation) are not capped by the handbook,
- *   but are not told apart from annual repeats here, so they are capped
- *   at C3 too.
- * - The standing grade is counted in the year and semester of the
- *   ORIGINAL attempt. Table 2.2 describes grade R as "grade for repeat
- *   inserted in previous attempt", so an improved grade replaces the
- *   original in the original semester, and that semester's QCA changes
- *   with it. The transcript marks such modules "(repeated)".
+ * - Every repeat is treated as an annual repeat and capped at C3, even
+ *   link-in repeats, which the handbook doesn't cap, because the program
+ *   can't tell them apart.
+ * - The grade that counts stays in the year and semester of the first
+ *   attempt (like grade R in Table 2.2), so that semester's QCA can change.
+ *   These modules are marked "(repeated)" on the transcript.
  */
 public class TranscriptService {
 
     private final ResultsService resultsService;
     private final QcaCalculator calculator;
     private final Function<String, Student> studentLookup;
-
+     
+     /**
+     * Sets up the service with the things it needs.
+     *
+     * @param resultsService where the student's results come from
+     * @param calculator does the QCA maths
+     * @param studentLookup finds a student by their ID
+     */
     public TranscriptService(ResultsService resultsService,
                              QcaCalculator calculator,
                              Function<String, Student> studentLookup) {
@@ -56,20 +53,34 @@ public class TranscriptService {
 
     // ---------- Public API ----------
 
-    /** QCA for one student in one academic year and semester. */
+    /**
+     * Gets a student's QCA for one semester.
+     *
+     * @param studentId the student's ID
+     * @param year the starting year of the academic year, e.g. 2026
+     * @param semester the semester (1 or 2)
+     * @return the QCA for that semester
+     */
     public double semesterQca(String studentId, int year, int semester) {
         return calculator.semesterQca(
                 getStandingResults(studentId), year, semester);
     }
 
-    /** Overall QCA for one student, using the grades that stand. */
+    /**
+     * Gets a student's overall QCA, after repeats are sorted out.
+     *
+     * @param studentId the student's ID
+     * @return the student's QCA across all their results
+     */
     public double overallQca(String studentId) {
         return calculator.overallQca(getStandingResults(studentId));
     }
 
     /**
-     * Returns one result per module: the grade that stands after
-     * the repeat rules are applied.
+     * Gets one result per module, with the grade that counts after repeats.
+     *
+     * @param studentId the student's ID
+     * @return one result per module, with the grade that counts after repeats
      */
     public List<ModuleResult> getStandingResults(String studentId) {
         List<ModuleResult> standing = new ArrayList<>();
@@ -81,9 +92,11 @@ public class TranscriptService {
     }
 
     /**
-     * Builds a printable transcript grouped by year and semester.
+     * Builds the transcript as text, sorted by year and semester.
      *
-     * @throws IllegalArgumentException if the student does not exist
+     * @param studentId the student's ID
+     * @return the transcript as text, ready to print
+     * @throws IllegalArgumentException if the student isn't found
      */
     public String buildTranscript(String studentId) {
 
@@ -105,7 +118,7 @@ public class TranscriptService {
             return sb.toString();
         }
 
-        // year -> semester -> entries (TreeMap keeps them in order)
+        // Group by year, then semester (TreeMap keeps them in order)
         Map<Integer, Map<Integer, List<Standing>>> grouped = new TreeMap<>();
         for (Standing s : entries) {
             grouped.computeIfAbsent(s.result.getYear(),
@@ -146,6 +159,11 @@ public class TranscriptService {
                         "  Semester QCA: %.2f%n",
                         calculator.semesterQca(semesterResults)));
             }
+            
+                sb.append(String.format(Locale.ROOT,
+                    "  Year QCA: %.2f%n",
+                    calculator.yearQca(getStandingResults(studentId),
+                            year.getKey())));
         }
 
         sb.append(String.format(Locale.ROOT,
