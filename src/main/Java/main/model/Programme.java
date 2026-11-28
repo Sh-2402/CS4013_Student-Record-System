@@ -1,7 +1,5 @@
 package main.model;
 
-import main.rules.ProgressionRule;
-
 public abstract class Programme {
 
     private final String code;
@@ -30,17 +28,9 @@ public abstract class Programme {
 
     public abstract String getType();
 
-    /**
-     * Returns the progression rule for this type of programme. Each
-     * subclass supplies its own rule (strategy pattern).
-     *
-     * @return the progression rule for this programme
-     */
-    public abstract ProgressionRule getProgressionRule();
-
     @Override
     public String toString() {
         return code + " - " + title + " (" + department + ")";
     }
 
-}
+}
