@@ -183,6 +183,13 @@ public class DepartmentMenu {
         try {
             ProgressionStatus status = progressionService.evaluate(studentId);
 
+            // Nothing to assess yet, for example a first year before their first exams.
+            if (transcriptService.getStandingResults(studentId).isEmpty()) {
+                System.out.println("No results recorded yet for " + studentId
+                        + ", so progression cannot be assessed.");
+                return;
+            }
+
             System.out.println("Overall QCA: " + formatQca(transcriptService.overallQca(studentId)));
             System.out.println("Status: " + status + " - " + status.getDescription());
             printModulesToReview(studentId);
